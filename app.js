@@ -13,6 +13,7 @@ updates(() => Pear.reload());
 
 //******************************* POPUP Code**********************************//
 let userName = "";
+let prevName = "";
 
 document.querySelector(".change--name").addEventListener("click", openPopUp);
 
@@ -40,12 +41,24 @@ document.querySelector("#popup--form").addEventListener("submit", (e) => {
   if (newName != "") {
     console.log(`New name set: ${newName}`);
 
+    const prevName =
+      userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6);
     userName = newName;
 
     popup.classList.add("hidden");
     outerScreen.classList.add("hidden");
 
     nameInput.value = "";
+
+    const changeName = {
+      system: true,
+      message: `${prevName} changed its name to ${newName}`,
+    };
+
+    const newNameMsgBuffer = Buffer.from(JSON.stringify(changeName));
+
+    const peers = [...swarm.connections];
+    for (const peer of peers) peer.write(newNameMsgBuffer);
   } else {
     console.log("Name input cannot be empty.");
   }
@@ -58,10 +71,16 @@ swarm.on("connection", (peer) => {
 
   peer.on("data", (message) => {
     const data = JSON.parse(message.toString()); // Parse the message data
-    const senderName = data.name || hexCode; // Use the sender's name or hex code
-    const receivedMessage = data.message;
 
-    onMessageAdded(senderName, receivedMessage); // Display the message with the correct sender name
+    if (data.system) {
+      // Display system messages differently
+      onSystemMessageAdded(data.message);
+    } else {
+      const senderName = data.name || hexCode; // Use the sender's name or hex code
+      const receivedMessage = data.message;
+
+      onMessageAdded(senderName, receivedMessage); // Display the message with the correct sender name
+    } // Display the message with the correct sender name
   });
 
   peer.on("error", (e) => console.log(`Connection Error: ${e}`));
@@ -102,6 +121,19 @@ async function joinSwarm(seedBuffer) {
   document.querySelector("#chat-room-seed").innerHTML = seed;
   document.querySelector(".loading").classList.add("hidden");
   document.querySelector("#chat").classList.remove("hidden");
+
+  const joinName =
+    userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6);
+
+  const joinMessage = {
+    system: true,
+    message: `🥳 ${joinName} joined the chat 🥂🥂`,
+  };
+
+  const joinMessageBuffer = Buffer.from(JSON.stringify(joinMessage));
+
+  const peers = [...swarm.connections];
+  for (const peer of peers) peer.write(joinMessageBuffer);
 }
 
 function sendMessage(e) {
@@ -174,3 +206,24 @@ document.querySelector("#message").addEventListener("keydown", (e) => {
       cursorPosition + 1;
   }
 });
+
+// System join message
+function onSystemMessageAdded(message) {
+  // Create a container div for system messages
+  const $systemMessageDiv = document.createElement("div");
+  $systemMessageDiv.classList.add("system-message");
+
+  // Create the message element
+  const $systemMessage = document.createElement("p");
+  $systemMessage.textContent = message;
+  $systemMessage.classList.add("system-message-text");
+
+  // Append message to the container div
+  $systemMessageDiv.appendChild($systemMessage);
+
+  // Append the container div to the #messages
+  const messagesContainer = document.querySelector("#messages");
+  messagesContainer.appendChild($systemMessageDiv);
+
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
