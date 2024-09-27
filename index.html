@@ -146,35 +146,69 @@
         height: 0px; /* Adjust the height of the horizontal scrollbar */
       }
 
-      .message-item {
+      .message-item-left {
         padding-inline: 14px;
-        padding-block: 10px;
+        padding-block: 6px;
         margin-bottom: 5px;
-        background-color: #3c3d37;
+        background-color: #3c3d3756;
         border-radius: 10px;
         border-bottom-left-radius: 0;
         width: fit-content;
         border: 0.4px solid #bbb;
         max-width: 60%;
         color: #ecdfcc;
+        backdrop-filter: blur(20px);
+        align-self: flex-start;
+      }
+      .message-item-right {
+        padding-inline: 14px;
+        padding-block: 6px;
+        margin-bottom: 5px;
+        background-color: #3c3d3756;
+        border-radius: 10px;
+        border-bottom-right-radius: 0;
+        width: fit-content;
+        border: 0.4px solid #bbb;
+        max-width: 60%;
+        color: #ecdfcc;
+        backdrop-filter: blur(20px);
+        align-self: flex-end;
       }
       .hidden {
         display: none !important;
       }
-      .by {
+      .by-left {
         font-size: 10px;
         font-weight: 300;
         color: #ecdfcc;
-        background-color: #3c3d37;
+        background-color: #2e073f;
         width: fit-content;
         padding-inline: 10px;
         padding-block: 3px;
         border-radius: 50px;
         border-top-left-radius: 0;
-        border: 0.4px solid #bbb;
+        border: 0px solid #bbb;
+        align-self: flex-start;
+      }
+      .by-right {
+        font-size: 10px;
+        font-weight: 300;
+        color: #ecdfcc;
+        background-color: #2e073f;
+        width: fit-content;
+        padding-inline: 10px;
+        padding-block: 3px;
+        border-radius: 50px;
+        border-top-left-radius: 0;
+        border: 0px solid #bbb;
+        align-self: flex-end;
       }
       .message--div {
         margin-block: 10px;
+        width: 96%;
+        position: relative;
+        display: flex;
+        flex-direction: column;
       }
       /* Pop Up */
       .popup {
@@ -216,12 +250,26 @@
         cursor: pointer;
       }
       .logo {
-        width: 14px;
+        width: 20px;
+      }
+      .blob {
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        position: fixed;
+        z-index: -1;
+        filter: blur(100px);
       }
     </style>
     <script type="module" src="./app.js"></script>
   </head>
   <body>
+    <div
+      class="blob"
+      style="background-color: #7a1cac94; top: -40px; left: -100px"></div>
+    <div
+      class="blob"
+      style="background-color: #eb367894; bottom: -250px; right: 0px"></div>
     <div id="bar"><pear-ctrl></pear-ctrl></div>
     <main>
       <button class="change--name">

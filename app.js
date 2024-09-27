@@ -105,13 +105,14 @@ async function joinSwarm(seedBuffer) {
 }
 
 function sendMessage(e) {
+  e.preventDefault();
   const message = document.querySelector("#message").value;
   document.querySelector("#message").value = "";
-  e.preventDefault();
 
-  const name = userName || "You"; // Use the sender's name or 'You'
+  const name =
+    userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6); // Use the sender's name or 'You'
 
-  onMessageAdded(name, message); // Display the message in the sender's system
+  onMessageAdded("You", message); // Display the message in the sender's system
 
   // Prepare the message data as an object
   const messageData = {
@@ -134,17 +135,42 @@ function onMessageAdded(from, message) {
   // Create the message element
   const $message = document.createElement("p");
   $message.textContent = message;
-  $message.classList.add("message-item");
+  $message.classList.add(
+    from != "You" ? "message-item-right" : "message-item-left"
+  );
 
   // Create the sender element
   const $sender = document.createElement("p");
   $sender.textContent = from;
-  $sender.classList.add("by");
+  $sender.classList.add(from != "You" ? "by-right" : "by-left");
 
   // Append message and sender to the container div
   $messageDiv.appendChild($message);
   $messageDiv.appendChild($sender);
 
   // Append the container div to the #messages
-  document.querySelector("#messages").appendChild($messageDiv);
+  const messagesContainer = document.querySelector("#messages");
+  messagesContainer.appendChild($messageDiv);
+
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
+// Message Edit
+document.querySelector("#message").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.shiftKey) {
+    e.preventDefault();
+
+    const messageInput = document.querySelector("#message");
+    const cursorPosition = messageInput.selectionStart;
+
+    const textBefore = messageInput.value.substring(0, cursorPosition);
+    const textAfter = messageInput.value.substring(cursorPosition);
+
+    // Update the message input value with a newline at the current cursor position
+    messageInput.value = textBefore + "\n" + textAfter;
+
+    // Move the cursor to the correct position after the newline
+    messageInput.selectionStart = messageInput.selectionEnd =
+      cursorPosition + 1;
+  }
+});
