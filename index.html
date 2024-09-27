@@ -154,7 +154,6 @@
         border-radius: 10px;
         border-bottom-left-radius: 0;
         width: fit-content;
-        border: 0.4px solid #bbb;
         max-width: 60%;
         color: #ecdfcc;
         backdrop-filter: blur(20px);
@@ -168,7 +167,6 @@
         border-radius: 10px;
         border-bottom-right-radius: 0;
         width: fit-content;
-        border: 0.4px solid #bbb;
         max-width: 60%;
         color: #ecdfcc;
         backdrop-filter: blur(20px);
@@ -269,6 +267,25 @@
       .system-message-text {
         color: #777;
       }
+      label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      label img {
+        width: 40px;
+        height: 40px;
+        vertical-align: middle;
+        margin-right: 5px;
+        cursor: pointer;
+      }
+      input[type="file"]::file-selector-button {
+        opacity: 0;
+        width: 0;
+      }
+      input#myFile {
+        display: none;
+      }
     </style>
     <script type="module" src="./app.js"></script>
   </head>
@@ -285,6 +302,7 @@
         <img class="logo" src="./assets/edit.png" />
       </button>
       <div class="outerScreen hidden"></div>
+      <!-- PopUp -->
       <div id="popup" class="popup hidden">
         <h1 class="popup--text">Enter the name you would like to select.</h1>
         <form id="popup--form">
@@ -292,7 +310,8 @@
           <button id="popUp--btn" type="submit" class="button">Set</button>
         </form>
       </div>
-      <div id="setup">
+      <!-- HomeCode -->
+      <div id="setup" class="">
         <button id="create--chat--room--btn" class="button">Create</button>
         <p class="text">- or -</p>
         <form id="join--form">
@@ -314,6 +333,11 @@
         </div>
         <div id="messages"></div>
         <form id="message-form">
+          <label for="image-upload">
+            <img src="./assets/camera.png" alt="Choose File" />
+          </label>
+          <input type="file" id="image-upload" style="display: none" />
+
           <input
             id="message"
             class="input"

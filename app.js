@@ -11,6 +11,49 @@ teardown(() => swarm.destroy());
 
 updates(() => Pear.reload());
 
+// ********************************Image CODE*********************************//
+
+// Function to convert an image to a Base64 string
+function imageToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file); // Read file as Data URL (Base64 format)
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+}
+
+// Handle image selection and send as a message
+// Handle image selection and send as a message
+document
+  .querySelector("#image-upload")
+  .addEventListener("change", async (e) => {
+    const file = e.target.files[0]; // Get the selected image file
+    if (file) {
+      try {
+        const base64Image = await imageToBase64(file);
+        const messageData = {
+          name:
+            userName ||
+            b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6),
+          message: base64Image,
+          isImage: true, // Flag to indicate the message is an image
+        };
+
+        // Convert the message data to a Buffer and send it to all peers
+        const messageBuffer = Buffer.from(JSON.stringify(messageData));
+        const peers = [...swarm.connections];
+        for (const peer of peers) peer.write(messageBuffer);
+
+        onMessageAdded("You", base64Image, true); // Display the image in sender's chat
+      } catch (error) {
+        console.error("Image conversion failed: ", error);
+      }
+    }
+  });
+
+// **************************************************************************//
+
 //******************************* POPUP Code**********************************//
 let userName = "";
 let prevName = "";
@@ -78,8 +121,9 @@ swarm.on("connection", (peer) => {
     } else {
       const senderName = data.name || hexCode; // Use the sender's name or hex code
       const receivedMessage = data.message;
+      const isImage = data.isImage;
 
-      onMessageAdded(senderName, receivedMessage); // Display the message with the correct sender name
+      onMessageAdded(senderName, receivedMessage, isImage); // Display the message with the correct sender name
     } // Display the message with the correct sender name
   });
 
@@ -141,15 +185,18 @@ function sendMessage(e) {
   const message = document.querySelector("#message").value;
   document.querySelector("#message").value = "";
 
+  if (message.trim() === "") return;
+
   const name =
     userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6); // Use the sender's name or 'You'
 
-  onMessageAdded("You", message); // Display the message in the sender's system
+  onMessageAdded("You", message, false); // Display the message in the sender's system
 
   // Prepare the message data as an object
   const messageData = {
     name: name,
     message: message,
+    isImage: false,
   };
 
   // Convert the message data to a Buffer and send it to all peers
@@ -159,31 +206,42 @@ function sendMessage(e) {
   for (const peer of peers) peer.write(messageBuffer);
 }
 
-function onMessageAdded(from, message) {
-  // Create a container div
-  const $messageDiv = document.createElement("div");
-  $messageDiv.classList.add("message--div");
+function onMessageAdded(senderName, message, isImage) {
+  const messagesContainer = document.querySelector("#messages");
 
-  // Create the message element
-  const $message = document.createElement("p");
-  $message.textContent = message;
-  $message.classList.add(
-    from != "You" ? "message-item-right" : "message-item-left"
+  // Create the message wrapper
+  const messageDiv = document.createElement("div");
+  messageDiv.classList.add("message--div");
+
+  // Create the message content element
+  const messageElement = document.createElement("div");
+  messageElement.classList.add(
+    senderName === "You" ? "message-item-right" : "message-item-left"
   );
 
-  // Create the sender element
-  const $sender = document.createElement("p");
-  $sender.textContent = from;
-  $sender.classList.add(from != "You" ? "by-right" : "by-left");
+  // Check if the message is an image or text
+  if (isImage) {
+    const imgElement = document.createElement("img");
+    imgElement.src = message;
+    imgElement.style.maxWidth = "100%";
+    messageElement.appendChild(imgElement);
+  } else {
+    messageElement.textContent = message;
+  }
 
-  // Append message and sender to the container div
-  $messageDiv.appendChild($message);
-  $messageDiv.appendChild($sender);
+  // Create the sender's name element (for the "by" message)
+  const senderElement = document.createElement("div");
+  senderElement.classList.add(senderName === "You" ? "by-right" : "by-left");
+  senderElement.textContent = senderName;
 
-  // Append the container div to the #messages
-  const messagesContainer = document.querySelector("#messages");
-  messagesContainer.appendChild($messageDiv);
+  // Append the sender's name and message content to the wrapper
+  messageDiv.appendChild(messageElement);
+  messageDiv.appendChild(senderElement);
 
+  // Append the message to the chat window
+  messagesContainer.appendChild(messageDiv);
+
+  // Scroll to the bottom of the chat
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
