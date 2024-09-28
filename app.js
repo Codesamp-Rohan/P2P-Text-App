@@ -56,8 +56,7 @@ document
 
 //******************************* POPUP Code**********************************//
 let userName = "";
-let prevName = "";
-
+let isAdmin = false;
 document.querySelector(".change--name").addEventListener("click", openPopUp);
 
 const popup = document.querySelector(".popup");
@@ -122,8 +121,9 @@ swarm.on("connection", (peer) => {
       const senderName = data.name || hexCode; // Use the sender's name or hex code
       const receivedMessage = data.message;
       const isImage = data.isImage;
+      const isAdmin = data.isAdmin;
 
-      onMessageAdded(senderName, receivedMessage, isImage); // Display the message with the correct sender name
+      onMessageAdded(senderName, receivedMessage, isImage, isAdmin); // Display the message with the correct sender name
     } // Display the message with the correct sender name
   });
 
@@ -131,7 +131,8 @@ swarm.on("connection", (peer) => {
 });
 
 swarm.on("update", () => {
-  document.querySelector("#peers-count").textContent = swarm.connections.size;
+  document.querySelector("#peers-count").textContent =
+    swarm.connections.size + 1;
 });
 
 document
@@ -144,6 +145,8 @@ async function createChatRoom() {
   console.log("Clicked the create btn");
   const seedBuffer = crypto.randomBytes(32);
   joinSwarm(seedBuffer);
+
+  isAdmin = true;
 }
 
 async function joinChatRoom(e) {
@@ -190,13 +193,12 @@ function sendMessage(e) {
   const name =
     userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6); // Use the sender's name or 'You'
 
-  onMessageAdded("You", message, false); // Display the message in the sender's system
-
   // Prepare the message data as an object
   const messageData = {
     name: name,
     message: message,
     isImage: false,
+    isAdmin: isAdmin,
   };
 
   // Convert the message data to a Buffer and send it to all peers
@@ -204,29 +206,40 @@ function sendMessage(e) {
 
   const peers = [...swarm.connections];
   for (const peer of peers) peer.write(messageBuffer);
+
+  onMessageAdded("You", message, false, isAdmin); // Display the message in the sender's system
 }
 
-function onMessageAdded(senderName, message, isImage) {
+function onMessageAdded(senderName, message, isImage, isAdmin = false) {
   const messagesContainer = document.querySelector("#messages");
 
   // Create the message wrapper
   const messageDiv = document.createElement("div");
   messageDiv.classList.add("message--div");
 
-  // Create the message content element
-  const messageElement = document.createElement("div");
-  messageElement.classList.add(
-    senderName === "You" ? "message-item-right" : "message-item-left"
-  );
-
   // Check if the message is an image or text
   if (isImage) {
+    // Create a separate container for images
+    const imageContainer = document.createElement("div");
+    imageContainer.classList.add(
+      senderName === "You" ? "image-item-right" : "image-item-left"
+    );
+
     const imgElement = document.createElement("img");
     imgElement.src = message;
     imgElement.style.maxWidth = "100%";
-    messageElement.appendChild(imgElement);
+
+    imageContainer.appendChild(imgElement);
+    messageDiv.appendChild(imageContainer);
   } else {
+    // Create the message content element for text
+    const messageElement = document.createElement("div");
+    messageElement.classList.add(
+      senderName === "You" ? "message-item-right" : "message-item-left"
+    );
+
     messageElement.textContent = message;
+    messageDiv.appendChild(messageElement);
   }
 
   // Create the sender's name element (for the "by" message)
@@ -234,8 +247,14 @@ function onMessageAdded(senderName, message, isImage) {
   senderElement.classList.add(senderName === "You" ? "by-right" : "by-left");
   senderElement.textContent = senderName;
 
-  // Append the sender's name and message content to the wrapper
-  messageDiv.appendChild(messageElement);
+  if (isAdmin) {
+    const adminTag = document.createElement("span");
+    adminTag.textContent = "Admin";
+    adminTag.classList.add("admin-tag"); // Add a CSS class for the admin tag styling
+    senderElement.appendChild(adminTag);
+  }
+
+  // Append the sender's name to the wrapper
   messageDiv.appendChild(senderElement);
 
   // Append the message to the chat window
