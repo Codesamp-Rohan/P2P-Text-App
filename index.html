@@ -1,310 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <style>
-      body > h1:nth-of-type(1) {
-        cursor: pointer;
-      }
-      * {
-        padding: 0;
-        margin: 0;
-        box-sizing: border-box;
-      }
-      body {
-        --title-bar-height: 32px;
-        padding-top: var(--title-bar-height);
-        font-family: Helvetica;
-        background-color: #181c14;
-        width: 100vw;
-        height: 100vh;
-        padding: 40px;
-      }
-
-      #bar {
-        background: #000;
-        backdrop-filter: blur(64px);
-        -webkit-app-region: drag;
-        height: var(--title-bar-height);
-        padding: 0;
-        border-top-left-radius: 8px;
-        border-top-right-radius: 8px;
-        color: #000;
-        white-space: nowrap;
-        box-sizing: border-box;
-        position: fixed;
-        z-index: 2;
-        width: 100%;
-        left: 0;
-        top: 0;
-      }
-
-      pear-ctrl[data-platform="darwin"] {
-        margin-top: 18px;
-        margin-left: 12px;
-      }
-      main {
-        position: relative;
-        width: 100%;
-        height: 100%;
-      }
-      #setup {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 14px;
-      }
-      .text {
-        color: #ecdfcc;
-      }
-      .button {
-        padding-inline: 30px;
-        padding-block: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: #ecdfcc;
-        background-color: #697565;
-        border: 0;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-      form {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-      }
-      .input {
-        padding-inline: 10px;
-        padding-block: 10px;
-        border: 0;
-        border-radius: 6px;
-        width: 100%;
-        background-color: #3c3d37;
-        color: #ecdfcc;
-        outline: none;
-      }
-      input:focus {
-        border: 0;
-      }
-      .input::placeholder {
-        color: #ecdfcc;
-      }
-      .loading {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #ecdfcc;
-      }
-
-      /* Chat CSS */
-      #chat {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        position: relative;
-      }
-      #header {
-        width: 100%;
-      }
-      #details {
-        font-size: 12px;
-        font-weight: 300;
-        color: #777;
-      }
-      #messages {
-        width: 100%;
-        height: 80%;
-        margin-block: 40px;
-        overflow-y: scroll;
-      }
-      /* Scrollbar container */
-      ::-webkit-scrollbar {
-        width: 5px; /* Set the width of the scrollbar */
-        height: 5px; /* Set the height of the horizontal scrollbar */
-      }
-
-      /* Scrollbar track */
-      ::-webkit-scrollbar-track {
-        background: #3c3d37; /* Background color of the scrollbar track */
-        border-radius: 10px; /* Rounded corners for the track */
-      }
-
-      /* Scrollbar thumb */
-      ::-webkit-scrollbar-thumb {
-        background-color: #ecdfcc; /* Color of the scrollbar thumb (the draggable part) */
-        border-radius: 10px; /* Rounded corners for the thumb */
-      }
-      /* Horizontal scrollbar container */
-      ::-webkit-scrollbar-horizontal {
-        height: 0px; /* Adjust the height of the horizontal scrollbar */
-      }
-
-      .message-item-left {
-        padding-inline: 14px;
-        padding-block: 6px;
-        margin-bottom: 5px;
-        background-color: #3c3d3756;
-        border-radius: 10px;
-        border-bottom-left-radius: 0;
-        width: fit-content;
-        max-width: 60%;
-        color: #ecdfcc;
-        backdrop-filter: blur(20px);
-        align-self: flex-start;
-      }
-      .message-item-right {
-        padding-inline: 14px;
-        padding-block: 6px;
-        margin-bottom: 5px;
-        background-color: #3c3d3756;
-        border-radius: 10px;
-        border-bottom-right-radius: 0;
-        width: fit-content;
-        max-width: 60%;
-        color: #ecdfcc;
-        backdrop-filter: blur(20px);
-        align-self: flex-end;
-      }
-      .hidden {
-        display: none !important;
-      }
-      .by-left {
-        font-size: 10px;
-        font-weight: 300;
-        color: #ecdfcc;
-        width: fit-content;
-        padding-inline: 10px;
-        padding-block: 3px;
-        border-radius: 50px;
-        border-top-left-radius: 0;
-        border: 0px solid #bbb;
-        align-self: flex-start;
-      }
-      .by-right {
-        font-size: 10px;
-        font-weight: 300;
-        color: #ecdfcc;
-        width: fit-content;
-        padding-inline: 10px;
-        padding-block: 3px;
-        border-radius: 50px;
-        border-top-left-radius: 0;
-        border: 0px solid #bbb;
-        align-self: flex-end;
-      }
-      .message--div {
-        margin-block: 10px;
-        width: 96%;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-      }
-      /* Pop Up */
-      .popup {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 60%;
-        z-index: 999;
-        background-color: #525547;
-        padding: 15px;
-        border-radius: 12px;
-      }
-      .outerScreen {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        z-index: 900;
-        background-color: #00000080;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-      }
-      .popup--text {
-        font-size: 12px;
-        font-weight: 700;
-        padding: 8px;
-        color: #ecdfcc;
-      }
-      .change--name {
-        position: fixed;
-        right: 10px;
-        padding: 6px;
-        border-radius: 5px;
-        border: 0.4px solid #333;
-        font-weight: 700;
-        font-size: 12px;
-        background-color: transparent;
-        cursor: pointer;
-      }
-      .logo {
-        width: 20px;
-      }
-      .blob {
-        width: 300px;
-        height: 300px;
-        border-radius: 50%;
-        position: fixed;
-        z-index: -1;
-        filter: blur(100px);
-      }
-
-      /* System join message CSS */
-      .system-message {
-        text-align: center;
-        margin-inline: 20px;
-      }
-      .system-message-text {
-        color: #777;
-      }
-      label {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      label img {
-        width: 40px;
-        height: 40px;
-        vertical-align: middle;
-        margin-right: 5px;
-        cursor: pointer;
-      }
-      input[type="file"]::file-selector-button {
-        opacity: 0;
-        width: 0;
-      }
-      input#myFile {
-        display: none;
-      }
-      .image-item-right {
-        align-self: flex-end;
-        width: 60%;
-      }
-      .image-item-left {
-        align-self: flex-start;
-        width: 60%;
-      }
-      .image-item-right img,
-      .image-item-left img {
-        border-radius: 30px;
-      }
-      .admin-tag {
-        color: #fff;
-        font-size: 10px;
-        padding: 2px 4px;
-        border-radius: 3px;
-        margin-left: 5px;
-        font-weight: bold;
-      }
-    </style>
+    <link rel="stylesheet" href="./style.css" />
     <script type="module" src="./app.js"></script>
   </head>
   <body>
@@ -317,7 +14,7 @@
     <div id="bar"><pear-ctrl></pear-ctrl></div>
     <main>
       <button class="change--name">
-        <img class="logo" src="./assets/edit.png" />
+        <img class="logo" src="./assets/profile.png" />
       </button>
       <div class="outerScreen hidden"></div>
       <!-- PopUp -->
@@ -328,6 +25,14 @@
           <button id="popUp--btn" type="submit" class="button">Set</button>
         </form>
       </div>
+      <!-- Name GRP PopUp -->
+       <div id="grpName--popup" class="popup hidden">
+          <h1 class="popup--text">Enter the name of the group.</h1>
+        <form id="grp--popup--form">
+          <input id="grp--popUp--input" class="input" placeholder="Enter the group name" />
+          <button id="grp--popUp--btn" type="submit" class="button">Set</button>
+        </form>
+       </div>
       <!-- HomeCode -->
       <div id="setup" class="">
         <button id="create--chat--room--btn" class="button">Create</button>
@@ -336,7 +41,7 @@
           <input
             id="join--room--btn--seed"
             class="input"
-            style="width: 60%"
+            style="width: 40%"
             placeholder="Enter the Seed" />
           <button id="join--room--btn" class="button">Join</button>
         </form>
@@ -345,24 +50,57 @@
       <div id="chat" class="hidden">
         <div id="header">
           <div id="details">
-            <div>Seed: <span id="chat-room-seed"></span></div>
-            <div>Peers: <span id="peers-count">1</span></div>
+            <span class="grpName--container"></span>
+              <h3 class="grpName--text">Holesail.io</h3>
+            </span>
+            <div class="seed--msg">Seed: <span id="chat-room-seed"></span></div>
+            <div class="peer--member"><img src="./assets/peer--member.png" class="peers--icon" /><span id="peers-count">1</span> members</div>
           </div>
         </div>
         <div id="messages"></div>
-        <form id="message-form">
-          <label for="image-upload">
-            <img src="./assets/camera.png" alt="Choose File" />
-          </label>
-          <input type="file" id="image-upload" style="display: none" />
-
-          <input
-            id="message"
-            class="input"
-            type="text"
-            placeholder="message..." />
-          <input type="submit" class="button" value="Send" />
-        </form>
+        <div id="sticker-picker" class="sticker-picker">
+          <button class="sticker--close--btn">
+            <p class="text">X</p>
+          </button>
+          <img src="./assets/Stickers/angry.png" class="sticker" />
+          <img src="./assets/Stickers/bird.png" class="sticker" />
+          <img src="./assets/Stickers/curious.png" class="sticker" />
+          <img src="./assets/Stickers/dancing.png" class="sticker" />
+          <img src="./assets/Stickers/electric-shock.png" class="sticker" />
+          <img src="./assets/Stickers/holiday.png" class="sticker" />
+          <img src="./assets/Stickers/hug.png" class="sticker" />
+          <img src="./assets/Stickers/hungry.png" class="sticker" />
+          <img src="./assets/Stickers/in-love.png" class="sticker" />
+          <img src="./assets/Stickers/inventor.png" class="sticker" />
+          <img src="./assets/Stickers/love-and-romance.png" class="sticker" />
+          <img src="./assets/Stickers/music.png" class="sticker" />
+          <img src="./assets/Stickers/outer-space.png" class="sticker" />
+          <img src="./assets/Stickers/spa-and-relaxation.png" class="sticker" />
+          <!-- Add more stickers as needed -->
+        </div>
+        <div class="add--popUp hidden">
+           <label for="image-upload">
+              <p>Add Image</p>
+            </label>
+          <label class="sticker--btn">Add Sticker</label>
+            
+        </div>
+        <div class="bottom--input--section">
+          <button class="add--btn"><img src="./assets/plus.png" class="icon"/></button>
+          <!-- <button class="sticker--btn">Sticker</button> -->
+          <form id="message-form">
+            <!-- <label for="image-upload">
+              <img src="./assets/camera.png" alt="Choose File" />
+            </label> -->
+            <input type="file" id="image-upload" style="display: none" />
+            <input
+              id="message"
+              class="input"
+              type="text"
+              placeholder="message..." />
+            <input type="submit" class="button" value="Send" />
+          </form>
+        </div>
       </div>
     </main>
   </body>

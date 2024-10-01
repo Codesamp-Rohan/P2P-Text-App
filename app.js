@@ -72,6 +72,7 @@ outerScreen.addEventListener("click", closePopUp);
 function closePopUp() {
   popup.classList.add("hidden");
   outerScreen.classList.add("hidden");
+  grp_PopUp.classList.add("hidden");
 }
 
 document.querySelector("#popup--form").addEventListener("submit", (e) => {
@@ -122,8 +123,9 @@ swarm.on("connection", (peer) => {
       const receivedMessage = data.message;
       const isImage = data.isImage;
       const isAdmin = data.isAdmin;
+      const isSticker = data.isSticker;
 
-      onMessageAdded(senderName, receivedMessage, isImage, isAdmin); // Display the message with the correct sender name
+      onMessageAdded(senderName, receivedMessage, isImage, isAdmin, isSticker); // Display the message with the correct sender name
     } // Display the message with the correct sender name
   });
 
@@ -135,18 +137,41 @@ swarm.on("update", () => {
     swarm.connections.size + 1;
 });
 
-document
-  .querySelector("#create--chat--room--btn")
-  .addEventListener("click", createChatRoom);
+const createChatRoomBtn = document.querySelector("#create--chat--room--btn");
+const grp_PopUp = document.querySelector("#grpName--popup");
+
+createChatRoomBtn.addEventListener("click", grpPopUp);
 document.querySelector("#join--form").addEventListener("submit", joinChatRoom);
 document.querySelector("#message-form").addEventListener("submit", sendMessage);
 
-async function createChatRoom() {
+function grpPopUp() {
+  grp_PopUp.classList.remove("hidden");
+  outerScreen.classList.remove("hidden");
+  document
+    .querySelector("#grp--popup--form")
+    .addEventListener("submit", (e) => {
+      e.preventDefault();
+      outerScreen.classList.add("hidden");
+      const groupNameInput = document.querySelector("#grp--popUp--input");
+      const groupName = groupNameInput.value.trim();
+
+      if (groupName) {
+        createChatRoom(groupName); // Call createChatRoom with the group name
+        grp_PopUp.classList.add("hidden"); // Close the popup
+        groupNameInput.value = ""; // Clear the input field
+      } else {
+        console.log("Group name cannot be empty.");
+      }
+    });
+}
+
+async function createChatRoom(groupName) {
   console.log("Clicked the create btn");
   const seedBuffer = crypto.randomBytes(32);
   joinSwarm(seedBuffer);
-
   isAdmin = true;
+  const grpName = document.querySelector(".grpName--text");
+  grpName.textContent = groupName;
 }
 
 async function joinChatRoom(e) {
@@ -210,15 +235,44 @@ function sendMessage(e) {
   onMessageAdded("You", message, false, isAdmin); // Display the message in the sender's system
 }
 
-function onMessageAdded(senderName, message, isImage, isAdmin = false) {
+function onMessageAdded(
+  senderName,
+  message,
+  isImage,
+  isAdmin = false,
+  isSticker = false
+) {
   const messagesContainer = document.querySelector("#messages");
 
   // Create the message wrapper
   const messageDiv = document.createElement("div");
   messageDiv.classList.add("message--div");
 
-  // Check if the message is an image or text
-  if (isImage) {
+  // TimeElement
+  const currentTime = new Date();
+  const timeString = currentTime.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  // Create a time element
+  const timeElement = document.createElement("span");
+  timeElement.classList.add(
+    senderName === "You" ? "message-time-right" : "message-time-left"
+  ); // Add a class for styling
+  timeElement.textContent = timeString;
+
+  // Append the time element to the messageDiv
+
+  if (isSticker) {
+    const stickerElement = document.createElement("img");
+    stickerElement.src = message;
+    stickerElement.alt = "Sticker";
+    stickerElement.classList.add(
+      senderName === "You" ? "sticker-img-right" : "sticker-img-left"
+    );
+    messageDiv.appendChild(stickerElement);
+  } else if (isImage) {
     // Create a separate container for images
     const imageContainer = document.createElement("div");
     imageContainer.classList.add(
@@ -229,7 +283,18 @@ function onMessageAdded(senderName, message, isImage, isAdmin = false) {
     imgElement.src = message;
     imgElement.style.maxWidth = "100%";
 
+    const downloadImg = document.createElement("a");
+    downloadImg.href = message;
+    downloadImg.download = "shared-image";
+    downloadImg.classList.add(
+      senderName === "You"
+        ? "img--download--btn--right"
+        : "img--download--btn--left"
+    );
+    downloadImg.textContent = "Download";
+
     imageContainer.appendChild(imgElement);
+    imageContainer.appendChild(downloadImg);
     messageDiv.appendChild(imageContainer);
   } else {
     // Create the message content element for text
@@ -237,9 +302,39 @@ function onMessageAdded(senderName, message, isImage, isAdmin = false) {
     messageElement.classList.add(
       senderName === "You" ? "message-item-right" : "message-item-left"
     );
+    if (message.startsWith("clip://")) {
+      // Extract the clipboard text by removing the clip:// part
+      const clipboardText = message.replace("clip://", "");
 
-    messageElement.textContent = message;
-    messageDiv.appendChild(messageElement);
+      // Create a span to hold the clipboard text
+      const clipboardDiv = document.createElement("div");
+      clipboardDiv.textContent = clipboardText;
+
+      // Create a button to allow copying the text to the clipboard
+      const clipButton = document.createElement("button");
+      clipboardDiv.classList.add(
+        senderName === "You" ? "clipBoardDiv--right" : "clipBoardDiv--left"
+      );
+      clipButton.classList.add("clipBtn");
+      clipButton.textContent = "Copy";
+      clipButton.addEventListener("click", (e) => {
+        navigator.clipboard.writeText(clipboardText).then(() => {
+          clipButton.textContent = "Copied";
+          console.log("Text copied to clipboard:" + clipboardText);
+
+          setTimeout(() => {
+            clipButton.textContent = "Copy";
+          }, 2000);
+        });
+      });
+
+      // Append the clipboard text and the button to the message element
+      messageDiv.appendChild(clipboardDiv);
+      clipboardDiv.appendChild(clipButton);
+    } else {
+      messageElement.textContent = message;
+      messageDiv.appendChild(messageElement);
+    }
   }
 
   // Create the sender's name element (for the "by" message)
@@ -255,10 +350,10 @@ function onMessageAdded(senderName, message, isImage, isAdmin = false) {
   }
 
   // Append the sender's name to the wrapper
+  messageDiv.appendChild(timeElement);
   messageDiv.appendChild(senderElement);
-
-  // Append the message to the chat window
   messagesContainer.appendChild(messageDiv);
+  // Append the message to the chat window
 
   // Scroll to the bottom of the chat
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -304,3 +399,63 @@ function onSystemMessageAdded(message) {
 
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
+// *****************************Sticker*******************************************//
+
+function getBase64Image(imgUrl, callback) {
+  const img = new Image();
+  img.crossOrigin = "Anonymous";
+  img.src = imgUrl;
+  img.onload = function () {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+    const dataURL = canvas.toDataURL("image/png"); // Convert image to Base64
+    callback(dataURL);
+  };
+}
+
+const stickerBtn = document.querySelector(".sticker--btn");
+const stickerContainer = document.querySelector("#sticker-picker");
+const stickerCloseBtn = document.querySelector(".sticker--close--btn");
+stickerBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  stickerContainer.classList.toggle("sticker--scrollUp");
+  console.log("Clicked the button");
+});
+stickerCloseBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  stickerContainer.classList.remove("sticker--scrollUp");
+});
+
+// Usage when sending a sticker
+stickerContainer.addEventListener("click", (e) => {
+  const stickerPath = e.target.src;
+  getBase64Image(stickerPath, function (base64Data) {
+    const messageData = {
+      name: userName,
+      message: base64Data, // Send the Base64 encoded image
+      isSticker: true,
+      isAdmin: isAdmin,
+    };
+    stickerContainer.classList.remove(".sticker--scrollUp");
+
+    // Send the Base64 message to peers
+    const messageBuffer = Buffer.from(JSON.stringify(messageData));
+    const peers = [...swarm.connections];
+    for (const peer of peers) peer.write(messageBuffer);
+
+    onMessageAdded("You", base64Data, true, isAdmin, true); // Display the sticker in the sender's chat
+  });
+});
+//********************************************************************************//
+document.querySelector(".add--btn").addEventListener("click", () => {
+  document.querySelector(".add--popUp").classList.toggle("hidden");
+});
+document.querySelector(".add--popUp").addEventListener("click", () => {
+  document.querySelector(".add--popUp").classList.add("hidden");
+});
