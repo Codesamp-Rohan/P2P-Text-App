@@ -11,6 +11,9 @@ teardown(() => swarm.destroy());
 
 updates(() => Pear.reload());
 
+// DECLARATION
+const detailsPopUp = document.querySelector(".details--popUp");
+
 // ********************************Image CODE*********************************//
 
 // Function to convert an image to a Base64 string
@@ -23,7 +26,6 @@ function imageToBase64(file) {
   });
 }
 
-// Handle image selection and send as a message
 // Handle image selection and send as a message
 document
   .querySelector("#image-upload")
@@ -52,6 +54,54 @@ document
     }
   });
 
+function convertVideoToBinary(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    // Event handler for successful file read
+    reader.onload = function (event) {
+      const arrayBuffer = event.target.result; // Contains binary data
+      resolve(arrayBuffer);
+    };
+
+    // Event handler for file read errors
+    reader.onerror = function (event) {
+      reject(new Error("Error reading file: " + event.target.error));
+    };
+
+    // Read the file as an ArrayBuffer
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+document
+  .querySelector("#video-upload")
+  .addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        const videoBinary = await convertVideoToBinary(file);
+        // Convert ArrayBuffer to Base64 for sending
+        const base64Video = b4a.toString(new Uint8Array(videoBinary), "base64");
+        const messageData = {
+          name:
+            userName ||
+            b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6),
+          message: base64Video,
+          isVideo: true,
+        };
+
+        const messageBuffer = Buffer.from(JSON.stringify(messageData));
+        const peers = [...swarm.connections];
+        for (const peer of peers) peer.write(messageBuffer);
+
+        onMessageAdded("You", base64Video, false, false, false, true);
+      } catch (error) {
+        console.error("Video conversion failed: ", error);
+      }
+    }
+  });
+
 // **************************************************************************//
 
 //******************************* POPUP Code**********************************//
@@ -73,6 +123,7 @@ function closePopUp() {
   popup.classList.add("hidden");
   outerScreen.classList.add("hidden");
   grp_PopUp.classList.add("hidden");
+  detailsPopUp.classList.add("hidden");
 }
 
 document.querySelector("#popup--form").addEventListener("submit", (e) => {
@@ -110,6 +161,7 @@ document.querySelector("#popup--form").addEventListener("submit", (e) => {
 //**************** END ******************//
 
 swarm.on("connection", (peer) => {
+  const recievedChunks = {};
   const hexCode = b4a.toString(peer.remotePublicKey, "hex").substr(0, 6);
 
   peer.on("data", (message) => {
@@ -119,13 +171,21 @@ swarm.on("connection", (peer) => {
       // Display system messages differently
       onSystemMessageAdded(data.message);
     } else {
-      const senderName = data.name || hexCode; // Use the sender's name or hex code
+      const senderName = data.name || hexCode;
       const receivedMessage = data.message;
       const isImage = data.isImage;
       const isAdmin = data.isAdmin;
       const isSticker = data.isSticker;
+      const isVideo = data.isVideo;
 
-      onMessageAdded(senderName, receivedMessage, isImage, isAdmin, isSticker); // Display the message with the correct sender name
+      onMessageAdded(
+        senderName,
+        receivedMessage,
+        isImage,
+        isAdmin,
+        isSticker,
+        isVideo
+      ); // Display the message with the correct sender name
     } // Display the message with the correct sender name
   });
 
@@ -235,12 +295,30 @@ function sendMessage(e) {
   onMessageAdded("You", message, false, isAdmin); // Display the message in the sender's system
 }
 
+const fixedColors = ["#FF5733", "#33FF57", "#D2FF72", "#FF33A6", "#F9E400"];
+
+// Function to get a color from the fixed array based on a user's identifier
+function getColorFromUserKey(userKey) {
+  const index = Math.abs(userKey.hashCode()) % fixedColors.length;
+  return fixedColors[index];
+}
+
+// Utility function to create a consistent hash code from a string
+String.prototype.hashCode = function () {
+  let hash = 0;
+  for (let i = 0; i < this.length; i++) {
+    hash = this.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return hash;
+};
+
 function onMessageAdded(
   senderName,
   message,
   isImage,
   isAdmin = false,
-  isSticker = false
+  isSticker = false,
+  isVideo = false
 ) {
   const messagesContainer = document.querySelector("#messages");
 
@@ -272,6 +350,26 @@ function onMessageAdded(
       senderName === "You" ? "sticker-img-right" : "sticker-img-left"
     );
     messageDiv.appendChild(stickerElement);
+  } else if (isVideo) {
+    const videoContainer = document.createElement("div");
+    videoContainer.classList.add(
+      senderName === "You" ? "video-item-right" : "video-item-left"
+    );
+
+    const videoElement = document.createElement("video");
+    videoElement.src = "data:video/mp4;base64," + message; // Use Base64 string
+    videoElement.controls = true;
+    videoElement.style.maxWidth = "60%";
+    videoElement.classList.add("videoDiv");
+
+    // Log to see if videoElement is created
+    console.log("Video element created:", videoElement);
+
+    videoContainer.appendChild(videoElement);
+    messageDiv.appendChild(videoContainer);
+
+    // Log to see if videoContainer is appended
+    console.log("Video container appended:", videoContainer);
   } else if (isImage) {
     // Create a separate container for images
     const imageContainer = document.createElement("div");
@@ -331,15 +429,42 @@ function onMessageAdded(
       // Append the clipboard text and the button to the message element
       messageDiv.appendChild(clipboardDiv);
       clipboardDiv.appendChild(clipButton);
+    } else if (message.startsWith("image://")) {
+      const imgUrl = message.replace("image://", "");
+      const imageContainer = document.createElement("div");
+      imageContainer.classList.add(
+        senderName === "You" ? "image-item-right" : "image-item-left"
+      );
+
+      const imgElement = document.createElement("img");
+      imgElement.src = imgUrl;
+      imgElement.style.width = "100%";
+
+      const downloadImg = document.createElement("a");
+      downloadImg.href = message;
+      downloadImg.download = "shared-image";
+      downloadImg.classList.add(
+        senderName === "You"
+          ? "img--download--btn--right"
+          : "img--download--btn--left"
+      );
+      downloadImg.textContent = "Download";
+
+      imageContainer.appendChild(imgElement);
+      imageContainer.appendChild(downloadImg);
+      messageDiv.appendChild(imageContainer);
     } else {
       messageElement.textContent = message;
       messageDiv.appendChild(messageElement);
     }
   }
 
+  const userColor = getColorFromUserKey(senderName);
+
   // Create the sender's name element (for the "by" message)
   const senderElement = document.createElement("div");
   senderElement.classList.add(senderName === "You" ? "by-right" : "by-left");
+  senderElement.style.color = userColor;
   senderElement.textContent = senderName;
 
   if (isAdmin) {

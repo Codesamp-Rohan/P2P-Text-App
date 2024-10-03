@@ -13,9 +13,9 @@
       style="background-color: #eb367894; bottom: -250px; right: 0px"></div>
     <div id="bar"><pear-ctrl></pear-ctrl></div>
     <main>
-      <button class="change--name">
+      <!-- <button class="change--name">
         <img class="logo" src="./assets/profile.png" />
-      </button>
+      </button> -->
       <div class="outerScreen hidden"></div>
       <!-- PopUp -->
       <div id="popup" class="popup hidden">
@@ -48,14 +48,30 @@
       </div>
       <div class="loading hidden">Loading...</div>
       <div id="chat" class="hidden">
+        <div class="details--popUp hidden">
+          <h1 class="details--header">Details</h1>
+          <h3 class="grpName--text">Holesail.io</h3>
+          <div class="details--content">
+           <div class="seed--msg">
+            <img src="./assets/seed.png" style="width: 14px; margin-left: 2px;" class="peers--icon" />
+            <span id="chat-room-seed"></span>
+          </div>
+            <div class="peer--member">
+              <img src="./assets/peer--member.png" class="peers--icon" />
+              <span id="peers-count">1</span>
+              members</div>
+            </div>
+        </div>
         <div id="header">
           <div id="details">
+            <button class="details--btn"><img src="./assets/menu.png" class="icon"/></button>
             <span class="grpName--container"></span>
               <h3 class="grpName--text">Holesail.io</h3>
             </span>
-            <div class="seed--msg">Seed: <span id="chat-room-seed"></span></div>
-            <div class="peer--member"><img src="./assets/peer--member.png" class="peers--icon" /><span id="peers-count">1</span> members</div>
           </div>
+          <button class="change--name">
+            <img class="logo" src="./assets/profile.png" />
+          </button>
         </div>
         <div id="messages"></div>
         <div id="sticker-picker" class="sticker-picker">
@@ -83,16 +99,16 @@
               <p>Add Image</p>
             </label>
           <label class="sticker--btn">Add Sticker</label>
-            
+          <label for="file-upload">Add File</label>
+          <label for="video-upload">Add Video</label>
+
         </div>
         <div class="bottom--input--section">
           <button class="add--btn"><img src="./assets/plus.png" class="icon"/></button>
-          <!-- <button class="sticker--btn">Sticker</button> -->
           <form id="message-form">
-            <!-- <label for="image-upload">
-              <img src="./assets/camera.png" alt="Choose File" />
-            </label> -->
             <input type="file" id="image-upload" style="display: none" />
+            <input type="file" id="file-upload" style="display: none" />
+            <input type="file" accept="video/*" id="video-upload" style="display: none;"/>
             <input
               id="message"
               class="input"
@@ -103,5 +119,6 @@
         </div>
       </div>
     </main>
+    <script type="module" src="./popUp.js"></script>
   </body>
 </html>

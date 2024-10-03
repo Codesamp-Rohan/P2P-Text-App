@@ -64,7 +64,7 @@ main {
   color: #d782d8;
   background-color: #5207546a;
   border: 1px solid #771b78;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
 }
 form {
@@ -78,7 +78,7 @@ form {
   padding-block: 10px;
   border: 0;
   width: 100%;
-  border-radius: 6px;
+  border-radius: 10px;
   background-color: #3c3d37;
   color: #ecdfcc;
   outline: none;
@@ -109,11 +109,19 @@ input:focus {
 }
 #header {
   width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 }
 #details {
   font-size: 12px;
   font-weight: 300;
   color: #777;
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 .grpName--container {
   color: #ecdfcc !important;
@@ -163,7 +171,7 @@ input:focus {
   padding-inline: 14px;
   padding-block: 6px;
   margin-bottom: 5px;
-  background-color: #3c3d3756;
+  background-color: #3c3d37;
   border-radius: 10px;
   border-bottom-left-radius: 0;
   width: fit-content;
@@ -177,7 +185,7 @@ input:focus {
   padding-inline: 14px;
   padding-block: 6px;
   margin-bottom: 5px;
-  background-color: #3c3d3756;
+  background-color: #3c3d37;
   border-radius: 10px;
   border-bottom-right-radius: 0;
   width: fit-content;
@@ -256,7 +264,43 @@ input:focus {
   background-color: #121212;
   border: 0.5px solid #444;
   padding: 15px;
-  border-radius: 12px;
+  border-radius: 14px;
+}
+.details--popUp {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 60%;
+  z-index: 999;
+  background-color: #121212;
+  border: 0.5px solid #444;
+  padding: 15px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.details--btn {
+  background-color: #5207546a;
+  border: 1px solid #771b78;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.details--btn img {
+  width: 20px;
+}
+.details--header {
+  color: #ecdfcc;
+}
+.details--content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .outerScreen {
   position: fixed;
@@ -275,10 +319,10 @@ input:focus {
   color: #ecdfcc;
 }
 .change--name {
-  position: fixed;
+  /* position: fixed; */
   right: 10px;
-  padding: 6px;
-  border-radius: 5px;
+  padding: 10px;
+  border-radius: 10px;
   background-color: #5207546a;
   border: 1px solid #771b78;
   font-weight: 700;
@@ -358,6 +402,7 @@ input#myFile {
   background-color: #0000003b;
   border: 1px solid #777;
   border-radius: 7px;
+  margin-bottom: 6px;
 }
 .clipBoardDiv--right {
   color: #bbb;
@@ -371,6 +416,7 @@ input#myFile {
   background-color: #0000003b;
   border: 0.5px solid #777;
   border-radius: 7px;
+  margin-bottom: 6px;
 }
 .clipBtn {
   align-self: flex-end;
@@ -459,22 +505,29 @@ input#myFile {
   width: 100%;
 }
 .grpName--text {
-  color: #ecdfcc;
+  color: #d782d8;
+  background-color: #5207546a;
+  border: 1px solid #771b78;
   font-size: 16px;
   font-weight: 500;
+  width: fit-content;
+  padding: 10px;
+  border-radius: 10px;
 }
 .peers--icon {
-  width: 16px;
+  width: 15px;
 }
 .peer--member {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 5px;
   color: #aaa;
 }
 .seed--msg {
   color: #aaa;
-  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .add--btn {
   background-color: #5207546a;
@@ -513,4 +566,25 @@ input#myFile {
   text-transform: capitalize;
   align-self: flex-start;
   width: 100%;
+}
+.file-upload-message {
+  align-self: flex-end;
+  color: #eee;
+  padding: 10px;
+  background: #777;
+  margin-bottom: 5px;
+  border-radius: 10px;
+}
+.videoDiv {
+  padding: 10px;
+  border-radius: 10px;
+  background-color: pink;
+}
+.video-item-right {
+  align-self: flex-end;
+  width: 60%;
+}
+.video-item-left {
+  align-self: flex-start;
+  width: 60%;
 }
