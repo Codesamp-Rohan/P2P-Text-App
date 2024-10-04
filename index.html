@@ -101,6 +101,8 @@
           <label class="sticker--btn">Add Sticker</label>
           <label for="file-upload">Add File</label>
           <label for="video-upload">Add Video</label>
+          <label for="audio-upload">Add Audio</label>
+
 
         </div>
         <div class="bottom--input--section">
@@ -109,11 +111,11 @@
             <input type="file" id="image-upload" style="display: none" />
             <input type="file" id="file-upload" style="display: none" />
             <input type="file" accept="video/*" id="video-upload" style="display: none;"/>
-            <input
+            <textarea
               id="message"
               class="input"
               type="text"
-              placeholder="message..." />
+              placeholder="message..."></textarea>
             <input type="submit" class="button" value="Send" />
           </form>
         </div>

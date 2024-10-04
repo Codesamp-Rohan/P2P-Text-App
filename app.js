@@ -230,8 +230,10 @@ async function createChatRoom(groupName) {
   const seedBuffer = crypto.randomBytes(32);
   joinSwarm(seedBuffer);
   isAdmin = true;
-  const grpName = document.querySelector(".grpName--text");
-  grpName.textContent = groupName;
+  const grpName = document.querySelectorAll(".grpName--text");
+  grpName.forEach((grp) => {
+    grp.textContent = groupName;
+  });
 }
 
 async function joinChatRoom(e) {
@@ -359,7 +361,7 @@ function onMessageAdded(
     const videoElement = document.createElement("video");
     videoElement.src = "data:video/mp4;base64," + message; // Use Base64 string
     videoElement.controls = true;
-    videoElement.style.maxWidth = "60%";
+    videoElement.style.maxWidth = "100%";
     videoElement.classList.add("videoDiv");
 
     // Log to see if videoElement is created
@@ -400,6 +402,7 @@ function onMessageAdded(
     messageElement.classList.add(
       senderName === "You" ? "message-item-right" : "message-item-left"
     );
+
     if (message.startsWith("clip://")) {
       // Extract the clipboard text by removing the clip:// part
       const clipboardText = message.replace("clip://", "");
@@ -454,7 +457,9 @@ function onMessageAdded(
       imageContainer.appendChild(downloadImg);
       messageDiv.appendChild(imageContainer);
     } else {
-      messageElement.textContent = message;
+      const formattedMessage = message.replace(/\n/g, "<br/>");
+
+      messageElement.innerHTML = formattedMessage;
       messageDiv.appendChild(messageElement);
     }
   }

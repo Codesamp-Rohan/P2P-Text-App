@@ -82,6 +82,7 @@ form {
   background-color: #3c3d37;
   color: #ecdfcc;
   outline: none;
+  resize: none;
 }
 input:focus {
   border: 0;
@@ -578,13 +579,17 @@ input#myFile {
 .videoDiv {
   padding: 10px;
   border-radius: 10px;
-  background-color: pink;
+  background-color: #333;
+  width: 100%;
+}
+.videoDiv video {
+  border-radius: 10px;
 }
 .video-item-right {
   align-self: flex-end;
-  width: 60%;
+  width: 30%;
 }
 .video-item-left {
   align-self: flex-start;
-  width: 60%;
+  width: 30%;
 }
