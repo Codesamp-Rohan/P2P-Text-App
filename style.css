@@ -1,6 +1,7 @@
 body > h1:nth-of-type(1) {
   cursor: pointer;
 }
+/* #D180D2 */
 * {
   padding: 0;
   margin: 0;
@@ -83,6 +84,8 @@ form {
   color: #ecdfcc;
   outline: none;
   resize: none;
+  height: 42px;
+  font-family: Helvetica;
 }
 input:focus {
   border: 0;
@@ -371,12 +374,12 @@ input#myFile {
 }
 .image-item-right {
   align-self: flex-end;
-  width: 60%;
+  width: 30%;
   position: relative;
 }
 .image-item-left {
   align-self: flex-start;
-  width: 60%;
+  width: 30%;
   position: relative;
 }
 .image-item-right img,
@@ -448,6 +451,12 @@ input#myFile {
 .sticker-img-left {
   align-self: flex-start;
   width: 20%;
+}
+.audio-left {
+  align-self: flex-start;
+}
+.audio-right {
+  align-self: flex-end;
 }
 .sticker-picker {
   display: flex;
@@ -577,7 +586,6 @@ input#myFile {
   border-radius: 10px;
 }
 .videoDiv {
-  padding: 10px;
   border-radius: 10px;
   background-color: #333;
   width: 100%;

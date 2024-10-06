@@ -8,7 +8,14 @@
       "backgroundColor": "#1F2430",
       "height": 740,
       "width": 1120
-    }
+    },
+    "entrypoints": [],
+    "links": [
+      "http://127.0.0.1",
+      "http://localhost",
+      "https://ka-f.fontawesome.com",
+      "https://www.youtube.com"
+    ]
   },
   "type": "module",
   "license": "Apache-2.0",

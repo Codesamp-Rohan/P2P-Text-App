@@ -13,9 +13,6 @@
       style="background-color: #eb367894; bottom: -250px; right: 0px"></div>
     <div id="bar"><pear-ctrl></pear-ctrl></div>
     <main>
-      <!-- <button class="change--name">
-        <img class="logo" src="./assets/profile.png" />
-      </button> -->
       <div class="outerScreen hidden"></div>
       <!-- PopUp -->
       <div id="popup" class="popup hidden">
@@ -50,7 +47,7 @@
       <div id="chat" class="hidden">
         <div class="details--popUp hidden">
           <h1 class="details--header">Details</h1>
-          <h3 class="grpName--text">Holesail.io</h3>
+          <h3 class="grpName--text" style="background-color: #333; border: 0;">Holesail.io</h3>
           <div class="details--content">
            <div class="seed--msg">
             <img src="./assets/seed.png" style="width: 14px; margin-left: 2px;" class="peers--icon" />
@@ -69,9 +66,14 @@
               <h3 class="grpName--text">Holesail.io</h3>
             </span>
           </div>
+          <div class="header--right" style="display: flex; align-items: center; gap: 10px;">
+          <button class="details--btn" id="reload--btn">
+              <img class="logo" src="./assets/leave.png"/>
+          </button>
           <button class="change--name">
             <img class="logo" src="./assets/profile.png" />
           </button>
+          </div>
         </div>
         <div id="messages"></div>
         <div id="sticker-picker" class="sticker-picker">
@@ -108,9 +110,10 @@
         <div class="bottom--input--section">
           <button class="add--btn"><img src="./assets/plus.png" class="icon"/></button>
           <form id="message-form">
-            <input type="file" id="image-upload" style="display: none" />
+            <input type="file" accept="image/*" id="image-upload" style="display: none" />
             <input type="file" id="file-upload" style="display: none" />
             <input type="file" accept="video/*" id="video-upload" style="display: none;"/>
+            <input type="file" accept="audio/*" id="audio-upload" style="display: none;">
             <textarea
               id="message"
               class="input"

@@ -77,10 +77,10 @@ function convertVideoToBinary(file) {
 document
   .querySelector("#video-upload")
   .addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const videoFile = e.target.files[0];
+    if (videoFile) {
       try {
-        const videoBinary = await convertVideoToBinary(file);
+        const videoBinary = await convertVideoToBinary(videoFile);
         // Convert ArrayBuffer to Base64 for sending
         const base64Video = b4a.toString(new Uint8Array(videoBinary), "base64");
         const messageData = {
@@ -102,7 +102,64 @@ document
     }
   });
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result); // Get the file data
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file); // Read the file as Data URL (Base64 format)
+  });
+}
+
+document
+  .querySelector("#audio-upload")
+  .addEventListener("change", async (e) => {
+    const audioFile = e.target.files[0];
+    if (audioFile) {
+      try {
+        const audioData = await fileToBase64(audioFile); // Convert audio to Base64
+        const messageData = {
+          name:
+            userName ||
+            b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6),
+          message: audioData,
+          isAudio: true,
+        };
+
+        const messageBuffer = Buffer.from(JSON.stringify(messageData));
+        const peers = [...swarm.connections];
+        for (const peer of peers) peer.write(messageBuffer);
+
+        onMessageAdded("You", audioData, false, false, false, false, true); // Display the audio in sender's chat
+      } catch (error) {
+        console.error("Audio conversion failed: ", error);
+      }
+    }
+  });
+
 // **************************************************************************//
+
+document.querySelector("#reload--btn").addEventListener("click", (e) => {
+  e.preventDefault();
+  notifyUserLeft(); // Notify others that the user is leaving
+  setTimeout(() => location.reload(), 100); // Delay reload to allow message to send
+});
+
+// Function to notify other members that a user has left
+function notifyUserLeft() {
+  const leaveMessage = {
+    system: true,
+    message: `${
+      userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6)
+    } has left the chat.`,
+  };
+
+  const leaveMessageBuffer = Buffer.from(JSON.stringify(leaveMessage));
+  const peers = [...swarm.connections];
+  for (const peer of peers) {
+    peer.write(leaveMessageBuffer);
+  }
+}
 
 //******************************* POPUP Code**********************************//
 let userName = "";
@@ -177,6 +234,7 @@ swarm.on("connection", (peer) => {
       const isAdmin = data.isAdmin;
       const isSticker = data.isSticker;
       const isVideo = data.isVideo;
+      const isAudio = data.isAudio;
 
       onMessageAdded(
         senderName,
@@ -184,7 +242,8 @@ swarm.on("connection", (peer) => {
         isImage,
         isAdmin,
         isSticker,
-        isVideo
+        isVideo,
+        isAudio
       ); // Display the message with the correct sender name
     } // Display the message with the correct sender name
   });
@@ -203,6 +262,16 @@ const grp_PopUp = document.querySelector("#grpName--popup");
 createChatRoomBtn.addEventListener("click", grpPopUp);
 document.querySelector("#join--form").addEventListener("submit", joinChatRoom);
 document.querySelector("#message-form").addEventListener("submit", sendMessage);
+document.querySelector("#message").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    if (e.shiftKey) {
+      // Allow a new line when Shift + Enter is pressed
+      return; // Do nothing, just let it add a new line
+    }
+    e.preventDefault(); // Prevents a new line from being added
+    sendMessage(e);
+  }
+});
 
 function grpPopUp() {
   grp_PopUp.classList.remove("hidden");
@@ -320,7 +389,8 @@ function onMessageAdded(
   isImage,
   isAdmin = false,
   isSticker = false,
-  isVideo = false
+  isVideo = false,
+  isAudio = false
 ) {
   const messagesContainer = document.querySelector("#messages");
 
@@ -344,7 +414,15 @@ function onMessageAdded(
 
   // Append the time element to the messageDiv
 
-  if (isSticker) {
+  if (isAudio) {
+    const audioElement = document.createElement("audio");
+    audioElement.src = message;
+    audioElement.controls = true;
+    audioElement.classList.add(
+      senderName === "You" ? "audio-right" : "audio-left"
+    );
+    messageDiv.appendChild(audioElement);
+  } else if (isSticker) {
     const stickerElement = document.createElement("img");
     stickerElement.src = message;
     stickerElement.alt = "Sticker";
@@ -456,6 +534,53 @@ function onMessageAdded(
       imageContainer.appendChild(imgElement);
       imageContainer.appendChild(downloadImg);
       messageDiv.appendChild(imageContainer);
+    } else if (message.startsWith("video://")) {
+      const videoUrl = message.replace("video://", "").trim();
+
+      // Create container
+      const videoContainer = document.createElement("div");
+      videoContainer.classList.add(
+        senderName === "You" ? "video-item-right" : "video-item-left"
+      );
+
+      let videoElement;
+
+      // Check if the link is a YouTube URL
+      if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
+        // Convert YouTube URL to embeddable format
+        let videoId;
+        if (videoUrl.includes("youtu.be")) {
+          videoId = videoUrl.split("/").pop(); // Extract ID from youtu.be link
+        } else {
+          videoId = new URL(videoUrl).searchParams.get("v"); // Extract ID from youtube.com link
+        }
+        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+
+        // Create iframe element
+        videoElement = document.createElement("iframe");
+        videoElement.src = embedUrl;
+        videoElement.setAttribute("frameborder", "0");
+        videoElement.setAttribute("allowfullscreen", "true");
+      } else {
+        // Handle non-YouTube links as direct video
+        videoElement = document.createElement("video");
+        videoElement.controls = true;
+        videoElement.width = 320;
+
+        // Create source element for the video
+        const sourceElement = document.createElement("source");
+        sourceElement.src = videoUrl;
+        sourceElement.type = "video/mp4";
+        videoElement.appendChild(sourceElement);
+
+        // Add fallback message for unsupported browsers
+        videoElement.innerHTML +=
+          "Your browser does not support the video tag.";
+      }
+
+      // Append video or iframe to the container
+      videoContainer.appendChild(videoElement);
+      messageDiv.appendChild(videoContainer);
     } else {
       const formattedMessage = message.replace(/\n/g, "<br/>");
 
