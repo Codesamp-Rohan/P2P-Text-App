@@ -14,6 +14,8 @@ updates(() => Pear.reload());
 // DECLARATION
 const detailsPopUp = document.querySelector(".details--popUp");
 
+const polls = {};
+
 // ********************************Image CODE*********************************//
 
 // Function to convert an image to a Base64 string
@@ -139,7 +141,7 @@ document
 
 // **************************************************************************//
 
-document.querySelector("#reload--btn").addEventListener("click", (e) => {
+document.querySelector("#leaving--btn").addEventListener("click", (e) => {
   e.preventDefault();
   notifyUserLeft(); // Notify others that the user is leaving
   setTimeout(() => location.reload(), 100); // Delay reload to allow message to send
@@ -147,6 +149,10 @@ document.querySelector("#reload--btn").addEventListener("click", (e) => {
 
 // Function to notify other members that a user has left
 function notifyUserLeft() {
+  document.querySelector(".leaving").classList.remove("hidden");
+  document.querySelector("#chat").classList.add("hidden");
+  console.log("Hidden removed");
+
   const leaveMessage = {
     system: true,
     message: `${
@@ -159,6 +165,10 @@ function notifyUserLeft() {
   for (const peer of peers) {
     peer.write(leaveMessageBuffer);
   }
+
+  setTimeout(() => {
+    leavingDiv.classList.add("hidden");
+  }, 3000);
 }
 
 //******************************* POPUP Code**********************************//
@@ -339,6 +349,23 @@ async function joinSwarm(seedBuffer) {
   for (const peer of peers) peer.write(joinMessageBuffer);
 }
 
+// weather function
+async function getWeather(city) {
+  const apiKey = "4e3e22861d59c5931b50082d9eecadb3"; // Replace with your OpenWeatherMap API key
+  const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+  try {
+    const response = await fetch(apiUrl); // Use await here
+    if (!response.ok) throw new Error("City not found");
+
+    const weatherData = await response.json(); // Await the JSON parsing
+    return weatherData;
+  } catch (error) {
+    console.error("Error fetching weather data:", error);
+    return null;
+  }
+}
+
 function sendMessage(e) {
   e.preventDefault();
   const message = document.querySelector("#message").value;
@@ -348,8 +375,7 @@ function sendMessage(e) {
 
   const name =
     userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6); // Use the sender's name or 'You'
-
-  // Prepare the message data as an object
+  // Prepare the message data as an object for regular messages
   const messageData = {
     name: name,
     message: message,
@@ -581,13 +607,138 @@ function onMessageAdded(
       // Append video or iframe to the container
       videoContainer.appendChild(videoElement);
       messageDiv.appendChild(videoContainer);
+    } else if (message.startsWith("weather://")) {
+      const city = message.replace("weather://", "").trim();
+      console.log(`Fetching weather for city: ${city}`); // Log the city being searched
+
+      // Create a container for weather data
+      const weatherContainer = document.createElement("div");
+      weatherContainer.classList.add(
+        senderName === "You" ? "weather-item-right" : "weather-item-left"
+      );
+      getWeather(city)
+        .then((weatherData) => {
+          if (weatherData) {
+            // Format the weather data to display
+            const weatherInfo = `
+          <div class="weather--card">
+          <span class="blob"></span>
+          <p style="font-size: 12px; color: #ddd;">${weatherData.name}:</p>
+          <span style="display: flex; align-items: top; margin-top: 4px; margin-bottom: 10px;">
+          <h1 style="font-weight: 900;">${weatherData.main.temp}</h1><p style="font-size: 12px;">°C</p>
+          </span>
+          <span>
+          <p style="color: #777;">Weather: ${weatherData.weather[0].description}</p>
+          <p style="color: #777;">Humidity: ${weatherData.main.humidity}%</p>
+          <p style="color: #777;">Humidity: ${weatherData.wind.speed} m/s</p>
+          </span>
+          </div>
+        `;
+
+            // Create and append weather data to the message div
+            weatherContainer.innerHTML = weatherInfo;
+          } else {
+            weatherContainer.innerHTML = "Error: Could not fetch weather data.";
+            weatherContainer.classList.add("error-message");
+          }
+
+          messageDiv.appendChild(weatherContainer);
+        })
+        .catch((err) => {
+          console.error("Error fetching weather data:", err);
+          weatherContainer.innerHTML = "Error: Could not fetch weather data.";
+          messageDiv.appendChild(weatherContainer);
+        });
+    } else if (message.startsWith("poll://")) {
+      const pollData = message.replace("poll://", "").trim();
+      const pollOptions = pollData.split("|");
+      const pollQuestion = pollOptions[0];
+      const pollChoices = pollOptions.slice(1);
+      const pollID = Date.now();
+
+      // Store the poll data in a global polls object
+      polls[pollID] = {
+        question: pollQuestion,
+        choices: pollChoices,
+        votes: Array(pollChoices.length).fill(0), // Array to store votes per choice
+      };
+
+      // Create poll container and assign a unique data attribute with pollID
+      const pollContainer = document.createElement("div");
+      pollContainer.classList.add(
+        senderName === "You" ? "poll-container-right" : "poll-container-left"
+      );
+      pollContainer.dataset.pollId = pollID; // Assign pollID for easier querying
+
+      const pollQuestionElement = document.createElement("p");
+      pollQuestionElement.textContent = pollQuestion;
+      pollContainer.appendChild(pollQuestionElement);
+
+      const pollChoicesContainer = document.createElement("div");
+      pollChoicesContainer.classList.add("poll-choices");
+      pollContainer.appendChild(pollChoicesContainer);
+
+      // Loop through poll choices and create buttons for each choice
+      pollChoices.forEach((choice, index) => {
+        const pollChoiceElement = document.createElement("button");
+        pollChoiceElement.textContent = choice;
+        pollChoiceElement.dataset.index = index;
+        pollChoiceElement.dataset.pollId = pollID; // Attach poll ID to the button
+        pollChoiceElement.addEventListener("click", handleVote); // Add event listener to handle vote
+        pollChoicesContainer.appendChild(pollChoiceElement);
+      });
+
+      messageDiv.appendChild(pollContainer); // Append poll container to the message div
     } else {
       const formattedMessage = message.replace(/\n/g, "<br/>");
 
       messageElement.innerHTML = formattedMessage;
       messageDiv.appendChild(messageElement);
     }
+
+    function handleVote(event) {
+      const pollID = event.target.dataset.pollId; // Get pollID from dataset
+      const choiceIndex = event.target.dataset.index;
+
+      // Increment vote for the selected choice
+      polls[pollID].votes[choiceIndex]++;
+
+      // Update the poll results UI
+      updatePollResults(pollID);
+    }
+
+    function updatePollResults(pollID) {
+      const poll = polls[pollID];
+      const totalVotes = poll.votes.reduce((sum, votes) => sum + votes, 0);
+
+      // Select the correct poll container using pollID
+      const pollContainer = document.querySelector(
+        `[data-poll-id="${pollID}"] .poll-choices`
+      );
+
+      if (!pollContainer) {
+        console.error(`Poll container not found for pollID: ${pollID}`);
+        return;
+      }
+
+      pollContainer.innerHTML = ""; // Clear current UI
+
+      // Update poll choices with votes and percentages
+      poll.choices.forEach((choice, index) => {
+        const pollChoiceElement = document.createElement("div");
+        pollChoiceElement.classList.add("pollResult");
+        const votesForChoice = poll.votes[index];
+        const percentage =
+          totalVotes > 0 ? ((votesForChoice / totalVotes) * 100).toFixed(2) : 0;
+
+        pollChoiceElement.textContent = `${choice} - ${votesForChoice} votes (${percentage}%)`;
+        pollContainer.appendChild(pollChoiceElement);
+      });
+    }
   }
+  // Function to update the poll results
+
+  //
 
   const userColor = getColorFromUserKey(senderName);
 
@@ -606,7 +757,7 @@ function onMessageAdded(
 
   // Append the sender's name to the wrapper
   messageDiv.appendChild(timeElement);
-  messageDiv.appendChild(senderElement);
+  if (!message.startsWith("anon://")) messageDiv.appendChild(senderElement);
   messagesContainer.appendChild(messageDiv);
   // Append the message to the chat window
 
@@ -708,9 +859,3 @@ stickerContainer.addEventListener("click", (e) => {
   });
 });
 //********************************************************************************//
-document.querySelector(".add--btn").addEventListener("click", () => {
-  document.querySelector(".add--popUp").classList.toggle("hidden");
-});
-document.querySelector(".add--popUp").addEventListener("click", () => {
-  document.querySelector(".add--popUp").classList.add("hidden");
-});

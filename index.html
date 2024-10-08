@@ -3,6 +3,7 @@
   <head>
     <link rel="stylesheet" href="./style.css" />
     <script type="module" src="./app.js"></script>
+
   </head>
   <body>
     <div
@@ -21,6 +22,54 @@
           <input id="popUp--input" class="input" placeholder="Enter the name" />
           <button id="popUp--btn" type="submit" class="button">Set</button>
         </form>
+        <button class="terms--btn">Everything you need to know</button>
+      </div>
+      <div class="terms--popUp hidden">
+        <button class="terms--close--btn">
+          <img src="./assets/plus.png" class="logo" />
+        </button>
+        <h3>Everything you need to know about?</h3>
+        <h4 class="terms--h4">Text Feature</h4>
+
+        <div class="terms--container">
+        <div class="terms--div" style="color: #c289ff;background-color: #7b00fe19;border: 1px solid #7C00FEc5;">
+        <p class="block--head">clip://</p>
+        <p class="block--content">Used to share copiable stuffs between the peers.</p>
+        <p class="block--content">for example:</p>
+        <p class="block" style="color: #c289ff;background-color: #3e1767;border: 1px solid #7C00FEc5;">clip://MessageWhichNeedsToBeCopied</p>
+        </div>
+         <div class="terms--div" style="color: #33ff58;background-color: #33ff5819;border: 1px solid #33ff58c5;">
+        <p class="block--head">image://</p>
+        <p class="block--content">Used to share online images between the peers.</p>
+        <p class="block--content">for example:</p>
+        <p class="block" style="color: #33ff58;background-color: #175d24;border: 1px solid #33ff58c5;">image://URLofTheImage</p>
+        </div>
+        <div class="terms--div" style="color: #ff88ad;background-color: #F5004F19;border: 1px solid #F5004Fc5;">
+        <p class="block--head">video://</p>
+        <p class="block--content">Used to share online videos between the peers.</p>
+        <p class="block--content">for example:</p>
+        <p class="block" style="color: #ff88ad;background-color: #701934;border: 1px solid #F5004Fc5;">image://URLofTheVideoPresentOnline</p>
+        </div>
+        <div class="terms--div" style="color: #ffe693;background-color: #FFD23F19;border: 1px solid #FFD23Fc5;">
+        <p class="block--head">weather://</p>
+        <p class="block--content">Used to check the current weather of a city.</p>
+        <p class="block--content">for example:</p>
+        <p class="block" style="color: #ffe693;background-color: #635117;border: 1px solid #FFD23Fc5;">weather://NameOfTheCity</p>
+        </div>
+        <div class="terms--div" style="color: #92fbff;background-color: #3ff9ff19;border: 1px solid #3ff9ffc5;">
+        <p class="block--head">poll://</p>
+        <p class="block--content">Used for polling something between the peers.</p>
+        <p class="block--content">for example:</p>
+        <p class="block" style="color: #92fbff;background-color: #185a5c;border: 1px solid #3ff9ffc5;">poll://Question|Option1|Option2|Option3|...</p>
+        </div>
+        <div class="terms--div" style="color: #6faad2;background-color: #3753662e;border: 1px solid #6faad2;">
+        <p class="block--head">anon://</p>
+        <p class="block--content">Used for anonimous messaging among the peers.</p>
+        <p class="block--content">for example:</p>
+        <p class="block" style="color: #6faad2;background-color: #12476a;border: 1px solid #6faad2;">anon://AnonimousMessage</p>
+        </div>
+        </div>
+
       </div>
       <!-- Name GRP PopUp -->
        <div id="grpName--popup" class="popup hidden">
@@ -31,7 +80,7 @@
         </form>
        </div>
       <!-- HomeCode -->
-      <div id="setup" class="">
+      <div id="setup" class="hidden">
         <button id="create--chat--room--btn" class="button">Create</button>
         <p class="text">- or -</p>
         <form id="join--form">
@@ -44,7 +93,9 @@
         </form>
       </div>
       <div class="loading hidden">Loading...</div>
-      <div id="chat" class="hidden">
+      <div class="leaving hidden">Leaving...</div>
+
+      <div id="chat" class="">
         <div class="details--popUp hidden">
           <h1 class="details--header">Details</h1>
           <h3 class="grpName--text" style="background-color: #333; border: 0;">Holesail.io</h3>
@@ -67,7 +118,8 @@
             </span>
           </div>
           <div class="header--right" style="display: flex; align-items: center; gap: 10px;">
-          <button class="details--btn" id="reload--btn">
+            <button class="details--btn  whiteboard--btn" style="color: #D180D2; font-weight: 700; text-transform: uppercase;">WhiteBoard</button>
+          <button class="details--btn" id="leaving--btn">
               <img class="logo" src="./assets/leave.png"/>
           </button>
           <button class="change--name">
@@ -75,6 +127,11 @@
           </button>
           </div>
         </div>
+        <div class="canva--div">
+          <div class="canva--control hidden">
+          </div>
+       <canvas id="whiteboard" class="hidden" width="900" height="600"></canvas>
+       </div>
         <div id="messages"></div>
         <div id="sticker-picker" class="sticker-picker">
           <button class="sticker--close--btn">
@@ -125,5 +182,7 @@
       </div>
     </main>
     <script type="module" src="./popUp.js"></script>
+    <script type="module" src="./canva.js"></script>
+
   </body>
 </html>

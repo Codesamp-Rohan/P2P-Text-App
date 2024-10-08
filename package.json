@@ -14,7 +14,8 @@
       "http://127.0.0.1",
       "http://localhost",
       "https://ka-f.fontawesome.com",
-      "https://www.youtube.com"
+      "https://www.youtube.com",
+      "https://api.openweathermap.org"
     ]
   },
   "type": "module",
