@@ -689,6 +689,25 @@ function onMessageAdded(
       });
 
       messageDiv.appendChild(pollContainer); // Append poll container to the message div
+    } else if (message.startsWith("anon://")) {
+      const senderMsg = message.replace("anon://", "");
+      const messageElement = document.createElement("div");
+      messageElement.classList.add(
+        senderName === "You" ? "message-item-right" : "message-item-left"
+      );
+      messageElement.innerHTML = senderMsg;
+      messageDiv.appendChild(messageElement);
+    } else if (message.includes("```")) {
+      const codeRegex = /```([^`]+)```/g;
+
+      const formattedMessage = message.replace(codeRegex, (match, code) => {
+        // Create a code block with Highlight.js highlighting
+        const highlightedCode = hljs.highlightAuto(code).value;
+        return `<pre><code>${highlightedCode}</code></pre>`;
+      });
+
+      messageElement.innerHTML += formattedMessage;
+      messageDiv.appendChild(messageElement);
     } else {
       const formattedMessage = message.replace(/\n/g, "<br/>");
 

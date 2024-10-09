@@ -41,11 +41,11 @@ termsCloseBtn.addEventListener("click", (e) => {
 
 const whiteBoard = document.querySelector("#whiteboard");
 const whiteBoardBtn = document.querySelector(".whiteboard--btn");
-const whiteBoardControl = document.querySelector(".canva--control");
+const whiteBoardControl = document.querySelector(".canva--div");
 
 whiteBoardBtn.addEventListener("click", (e) => {
   e.preventDefault();
-  whiteBoard.classList.toggle("hidden");
+  whiteBoard.classList.remove("hidden");
   outerScreen.classList.toggle("hidden");
   whiteBoardControl.classList.remove("hidden");
 });

@@ -15,7 +15,10 @@
       "http://localhost",
       "https://ka-f.fontawesome.com",
       "https://www.youtube.com",
-      "https://api.openweathermap.org"
+      "https://api.openweathermap.org",
+      "https://highlightjs.org",
+      "https://cdn.jsdelivr.net",
+      "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css"
     ]
   },
   "type": "module",

@@ -4,6 +4,9 @@
     <link rel="stylesheet" href="./style.css" />
     <script type="module" src="./app.js"></script>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
   </head>
   <body>
     <div
@@ -80,7 +83,7 @@
         </form>
        </div>
       <!-- HomeCode -->
-      <div id="setup" class="hidden">
+      <div id="setup" class="">
         <button id="create--chat--room--btn" class="button">Create</button>
         <p class="text">- or -</p>
         <form id="join--form">
@@ -95,7 +98,7 @@
       <div class="loading hidden">Loading...</div>
       <div class="leaving hidden">Leaving...</div>
 
-      <div id="chat" class="">
+      <div id="chat" class="hidden">
         <div class="details--popUp hidden">
           <h1 class="details--header">Details</h1>
           <h3 class="grpName--text" style="background-color: #333; border: 0;">Holesail.io</h3>
@@ -127,10 +130,10 @@
           </button>
           </div>
         </div>
-        <div class="canva--div">
-          <div class="canva--control hidden">
+        <div class="canva--div hidden">
+          <div class="canva--control">
           </div>
-       <canvas id="whiteboard" class="hidden" width="900" height="600"></canvas>
+          <canvas id="whiteboard" class="hidden" width="900" height="600"></canvas>
        </div>
         <div id="messages"></div>
         <div id="sticker-picker" class="sticker-picker">
@@ -161,8 +164,6 @@
           <label for="file-upload">Add File</label>
           <label for="video-upload">Add Video</label>
           <label for="audio-upload">Add Audio</label>
-
-
         </div>
         <div class="bottom--input--section">
           <button class="add--btn"><img src="./assets/plus.png" class="icon"/></button>
@@ -181,6 +182,10 @@
         </div>
       </div>
     </main>
+
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/go.min.js"></script>
+
+
     <script type="module" src="./popUp.js"></script>
     <script type="module" src="./canva.js"></script>
 

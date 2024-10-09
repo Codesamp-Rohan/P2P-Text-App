@@ -3,7 +3,7 @@ const context = canvas.getContext("2d");
 
 // Setup default brush settings
 context.strokeStyle = "black"; // Ensure this color contrasts with the background
-context.lineWidth = 2;
+context.lineWidth = 10;
 
 let drawing = false;
 
