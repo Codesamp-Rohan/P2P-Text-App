@@ -808,11 +808,16 @@ input#myFile {
   justify-content: space-between;
 }
 .canva--control {
-  width: 10%;
-  height: 70%;
+  /* width: 10%; */
+  height: 100%;
   border-radius: 10px;
   background-color: #fff;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
 }
 canvas {
   border: 1px solid black;
@@ -820,4 +825,22 @@ canvas {
   border-radius: 10px;
   background-color: #fff;
   z-index: 1000;
+}
+.canva--btn {
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 10px;
+  width: 100%;
+  border-radius: 10px;
+  border: 0.4px solid #bbb;
+}
+.canva--btn:hover {
+  background-color: #eee;
+}
+.canva--btn img {
+  width: 14px;
+}
+.canva--highlight {
+  background-color: #ccc;
 }

@@ -3,6 +3,7 @@
 import Hyperswarm from "hyperswarm";
 import crypto from "hypercore-crypto";
 import b4a from "b4a";
+
 const { teardown, updates } = Pear;
 
 const swarm = new Hyperswarm();
@@ -15,6 +16,176 @@ updates(() => Pear.reload());
 const detailsPopUp = document.querySelector(".details--popUp");
 
 const polls = {};
+
+// CANVA CODE
+
+// Canvas setup
+const canvas = document.getElementById("whiteboard");
+const context = canvas.getContext("2d");
+const canvaPencil = document.querySelector("#canva--pencil--btn");
+
+context.strokeStyle = "black";
+context.lineWidth = 1;
+
+let drawing = false;
+let isDragging = false;
+let draggedText = null; // Variable to hold the currently dragged text
+let textObjects = []; // Array to hold text objects
+
+function getMousePos(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  };
+}
+
+let active = 0;
+
+// Toggle pencil drawing mode
+canvaPencil.addEventListener("click", (e) => {
+  e.preventDefault();
+  active++;
+  drawing = active % 2 === 1; // Toggle drawing mode based on active state
+  console.log(drawing ? "Pencil mode activated" : "Pencil mode deactivated");
+
+  canvaPencil.classList.toggle(".canva--highlight");
+});
+
+// Mouse down event for starting the drawing or dragging
+let isDrawing = false; // Flag to track if the user is drawing
+
+// Mouse down event for starting the drawing or dragging
+canvas.addEventListener("mousedown", (e) => {
+  const pos = getMousePos(e);
+  if (isPointInText(pos.x, pos.y)) {
+    isDragging = true; // Set dragging state
+    draggedText = getTextAtPosition(pos.x, pos.y); // Get the dragged text object
+  } else if (drawing) {
+    isDrawing = true; // Set drawing state to true on mouse down
+    context.beginPath(); // Begin a new path each time the mouse is pressed
+    context.moveTo(pos.x, pos.y); // Set the start position for drawing
+  }
+});
+
+// Mouse move event for drawing or dragging
+canvas.addEventListener("mousemove", (e) => {
+  const pos = getMousePos(e);
+  if (isDrawing && !isDragging) {
+    // Draw a line to the new mouse position if drawing state is active
+    context.lineTo(pos.x, pos.y);
+    context.stroke();
+    sendDrawingData("draw", pos.x, pos.y); // Send the drawing action to peers
+  } else if (isDragging && draggedText) {
+    // Update the dragged text position
+    draggedText.x = pos.x;
+    draggedText.y = pos.y;
+    clearCanvas(); // Clear the canvas to redraw everything
+    redrawAllTexts(); // Redraw all texts
+  }
+});
+
+// Mouse up event to stop drawing or dragging
+canvas.addEventListener("mouseup", () => {
+  if (isDragging) {
+    isDragging = false; // Reset dragging state
+  } else if (isDrawing) {
+    isDrawing = false; // Stop drawing on mouse up
+    context.closePath(); // End the current drawing path
+  }
+});
+
+// Stop drawing or dragging if the mouse leaves the canvas
+canvas.addEventListener("mouseleave", () => {
+  if (isDragging) {
+    isDragging = false;
+  } else if (isDrawing) {
+    isDrawing = false; // Stop drawing if the mouse leaves the canvas
+    context.closePath(); // Close the drawing path
+  }
+});
+
+// Handle clear canvas button
+function clearCanvas() {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Function to draw text and keep track of text objects
+function drawText(text, x, y) {
+  context.fillStyle = "black";
+  context.font = "20px Arial";
+  context.fillText(text, x, y);
+
+  const textObject = { text, x, y };
+  textObjects.push(textObject); // Store the text object for future reference
+
+  // Send text drawing data to other peers
+  sendDrawingData("text", x, y, text); // Send the text action
+}
+
+// Button event for adding text
+const drawTextBtn = document.getElementById("draw-text-btn");
+drawTextBtn.addEventListener("click", () => {
+  const textInput = document.getElementById("text-input");
+  const text = textInput.value;
+  const x = 50; // X position to draw text
+  const y = 50; // Y position to draw text
+
+  drawText(text, x, y);
+  textInput.value = ""; // Clear the input field
+});
+
+// Function to check if mouse position is inside any text object
+function isPointInText(mouseX, mouseY) {
+  return textObjects.some((textObject) => {
+    const textWidth = context.measureText(textObject.text).width;
+    const textHeight = 20; // Approximate text height
+    return (
+      mouseX >= textObject.x &&
+      mouseX <= textObject.x + textWidth &&
+      mouseY >= textObject.y - textHeight &&
+      mouseY <= textObject.y
+    );
+  });
+}
+
+// Function to get the text object at a specific position
+function getTextAtPosition(mouseX, mouseY) {
+  return textObjects.find((textObject) => {
+    const textWidth = context.measureText(textObject.text).width;
+    const textHeight = 20; // Approximate text height
+    return (
+      mouseX >= textObject.x &&
+      mouseX <= textObject.x + textWidth &&
+      mouseY >= textObject.y - textHeight &&
+      mouseY <= textObject.y
+    );
+  });
+}
+
+// Function to redraw all texts on the canvas
+function redrawAllTexts() {
+  context.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+  textObjects.forEach((textObject) => {
+    drawText(textObject.text, textObject.x, textObject.y); // Redraw each text
+  });
+}
+
+// Updated sendDrawingData function
+export function sendDrawingData(actionType, x, y, textContent) {
+  const drawingData = {
+    actionType, // Type of action: 'draw', 'text', 'clear'
+    x,
+    y,
+    textContent: textContent || "", // Optional text content
+  };
+
+  const messageBuffer = Buffer.from(JSON.stringify(drawingData));
+  const peers = [...swarm.connections];
+  for (const peer of peers) {
+    peer.write(messageBuffer);
+  }
+}
 
 // ********************************Image CODE*********************************//
 
@@ -225,18 +396,30 @@ document.querySelector("#popup--form").addEventListener("submit", (e) => {
   }
 });
 
+const eraseBtn = document.getElementById("canva--erase--btn");
+eraseBtn.addEventListener("click", () => {
+  clearCanvas();
+});
 //**************** END ******************//
 
 swarm.on("connection", (peer) => {
-  const recievedChunks = {};
   const hexCode = b4a.toString(peer.remotePublicKey, "hex").substr(0, 6);
-
   peer.on("data", (message) => {
+    console.log("Message:", message);
     const data = JSON.parse(message.toString()); // Parse the message data
+
+    console.log(b4a.toString(message, "hex"));
 
     if (data.system) {
       // Display system messages differently
       onSystemMessageAdded(data.message);
+    } else if (data.action === "clear") {
+      clearCanvas(); // Call clearCanvas to clear the canvas
+    } else if (data.actionType === "draw") {
+      // Draw on the canvas based on the received coordinates
+      context.lineTo(data.x, data.y);
+      context.stroke();
+      context.moveTo(data.x, data.y);
     } else {
       const senderName = data.name || hexCode;
       const receivedMessage = data.message;

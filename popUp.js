@@ -41,6 +41,7 @@ termsCloseBtn.addEventListener("click", (e) => {
 
 const whiteBoard = document.querySelector("#whiteboard");
 const whiteBoardBtn = document.querySelector(".whiteboard--btn");
+const whiteBoardCloseBtn = document.querySelector(".whiteboard--close--btn");
 const whiteBoardControl = document.querySelector(".canva--div");
 
 whiteBoardBtn.addEventListener("click", (e) => {
@@ -48,4 +49,11 @@ whiteBoardBtn.addEventListener("click", (e) => {
   whiteBoard.classList.remove("hidden");
   outerScreen.classList.toggle("hidden");
   whiteBoardControl.classList.remove("hidden");
+});
+
+whiteBoardCloseBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  whiteBoard.classList.add("hidden");
+  outerScreen.classList.toggle("hidden");
+  whiteBoardControl.classList.add("hidden");
 });

@@ -132,8 +132,24 @@
         </div>
         <div class="canva--div hidden">
           <div class="canva--control">
+            
+            <button class="whiteboard--close--btn canva--btn">close</button>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <input type="text" id="text-input" class="canva--btn" style="background-color: #eee;" placeholder="Type your text here" />
+            <button id="draw-text-btn" class="canva--btn">Text</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+             <button id="canva--pencil--btn" class="canva--btn">
+              <img class="logo" src="./assets/pencil.png"/>
+            </button>
+            <button id="canva--erase--btn" class="canva--btn">
+              <img class="logo" src="./assets/eraser.png"/>
+            </button>
+            </div>
+
           </div>
-          <canvas id="whiteboard" class="hidden" width="900" height="600"></canvas>
+          <canvas id="whiteboard" class="hidden" width="950" height="600"></canvas>
        </div>
         <div id="messages"></div>
         <div id="sticker-picker" class="sticker-picker">
