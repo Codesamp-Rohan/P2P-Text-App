@@ -275,6 +275,39 @@ document
     }
   });
 
+document.querySelector("#file-upload").addEventListener("change", async (e) => {
+  const file = e.target.files[0]; // Get the selected file
+  if (file) {
+    try {
+      const base64Data = await fileToBase64(file);
+      const messageData = {
+        name:
+          userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6),
+        message: base64Data,
+        isFile: true,
+        fileType: file.type, // Store the file type for later processing
+      };
+
+      const messageBuffer = Buffer.from(JSON.stringify(messageData));
+      const peers = [...swarm.connections];
+      for (const peer of peers) peer.write(messageBuffer);
+
+      onMessageAdded(
+        "You",
+        base64Data,
+        false,
+        false,
+        false,
+        false,
+        false,
+        file.type
+      ); // Display the file in sender's chat
+    } catch (error) {
+      console.error("File conversion failed: ", error);
+    }
+  }
+});
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -413,6 +446,18 @@ swarm.on("connection", (peer) => {
     if (data.system) {
       // Display system messages differently
       onSystemMessageAdded(data.message);
+    } else if (data.isFile) {
+      const fileType = data.fileType;
+      onMessageAdded(
+        data.name,
+        data.message,
+        false,
+        false,
+        false,
+        false,
+        false,
+        fileType
+      );
     } else if (data.action === "clear") {
       clearCanvas(); // Call clearCanvas to clear the canvas
     } else if (data.actionType === "draw") {
@@ -599,7 +644,8 @@ function onMessageAdded(
   isAdmin = false,
   isSticker = false,
   isVideo = false,
-  isAudio = false
+  isAudio = false,
+  fileType = ""
 ) {
   const messagesContainer = document.querySelector("#messages");
 
@@ -623,112 +669,65 @@ function onMessageAdded(
 
   // Append the time element to the messageDiv
 
-  if (isAudio) {
-    const audioElement = document.createElement("audio");
-    audioElement.src = message;
-    audioElement.controls = true;
-    audioElement.classList.add(
-      senderName === "You" ? "audio-right" : "audio-left"
-    );
-    messageDiv.appendChild(audioElement);
-  } else if (isSticker) {
-    const stickerElement = document.createElement("img");
-    stickerElement.src = message;
-    stickerElement.alt = "Sticker";
-    stickerElement.classList.add(
-      senderName === "You" ? "sticker-img-right" : "sticker-img-left"
-    );
-    messageDiv.appendChild(stickerElement);
-  } else if (isVideo) {
-    const videoContainer = document.createElement("div");
-    videoContainer.classList.add(
-      senderName === "You" ? "video-item-right" : "video-item-left"
-    );
-
-    const videoElement = document.createElement("video");
-    videoElement.src = "data:video/mp4;base64," + message; // Use Base64 string
-    videoElement.controls = true;
-    videoElement.style.maxWidth = "100%";
-    videoElement.classList.add("videoDiv");
-
-    // Log to see if videoElement is created
-    console.log("Video element created:", videoElement);
-
-    videoContainer.appendChild(videoElement);
-    messageDiv.appendChild(videoContainer);
-
-    // Log to see if videoContainer is appended
-    console.log("Video container appended:", videoContainer);
-  } else if (isImage) {
-    // Create a separate container for images
-    const imageContainer = document.createElement("div");
-    imageContainer.classList.add(
-      senderName === "You" ? "image-item-right" : "image-item-left"
-    );
-
-    const imgElement = document.createElement("img");
-    imgElement.src = message;
-    imgElement.style.maxWidth = "100%";
-
-    const downloadImg = document.createElement("a");
-    downloadImg.href = message;
-    downloadImg.download = "shared-image";
-    downloadImg.classList.add(
-      senderName === "You"
-        ? "img--download--btn--right"
-        : "img--download--btn--left"
-    );
-    downloadImg.textContent = "Download";
-
-    imageContainer.appendChild(imgElement);
-    imageContainer.appendChild(downloadImg);
-    messageDiv.appendChild(imageContainer);
-  } else {
-    // Create the message content element for text
+  if (fileType) {
     const messageElement = document.createElement("div");
     messageElement.classList.add(
       senderName === "You" ? "message-item-right" : "message-item-left"
     );
-
-    if (message.startsWith("clip://")) {
-      // Extract the clipboard text by removing the clip:// part
-      const clipboardText = message.replace("clip://", "");
-
-      // Create a span to hold the clipboard text
-      const clipboardDiv = document.createElement("div");
-      clipboardDiv.textContent = clipboardText;
-
-      // Create a button to allow copying the text to the clipboard
-      const clipButton = document.createElement("button");
-      clipboardDiv.classList.add(
-        senderName === "You" ? "clipBoardDiv--right" : "clipBoardDiv--left"
+    const fileLink = document.createElement("a");
+    fileLink.style.color = "#eee";
+    fileLink.href = message; // The Base64 data URL
+    fileLink.download = "shared-file"; // Default file name
+    fileLink.textContent = `Download ${fileType}`;
+    messageElement.appendChild(fileLink);
+    messageDiv.appendChild(messageElement);
+  } else {
+    if (isAudio) {
+      const audioElement = document.createElement("audio");
+      audioElement.src = message;
+      audioElement.controls = true;
+      audioElement.classList.add(
+        senderName === "You" ? "audio-right" : "audio-left"
       );
-      clipButton.classList.add("clipBtn");
-      clipButton.textContent = "Copy";
-      clipButton.addEventListener("click", (e) => {
-        navigator.clipboard.writeText(clipboardText).then(() => {
-          clipButton.textContent = "Copied";
-          console.log("Text copied to clipboard:" + clipboardText);
+      messageDiv.appendChild(audioElement);
+    } else if (isSticker) {
+      const stickerElement = document.createElement("img");
+      stickerElement.src = message;
+      stickerElement.alt = "Sticker";
+      stickerElement.classList.add(
+        senderName === "You" ? "sticker-img-right" : "sticker-img-left"
+      );
+      messageDiv.appendChild(stickerElement);
+    } else if (isVideo) {
+      const videoContainer = document.createElement("div");
+      videoContainer.classList.add(
+        senderName === "You" ? "video-item-right" : "video-item-left"
+      );
 
-          setTimeout(() => {
-            clipButton.textContent = "Copy";
-          }, 2000);
-        });
-      });
+      const videoElement = document.createElement("video");
+      videoElement.src = "data:video/mp4;base64," + message; // Use Base64 string
+      videoElement.controls = true;
+      videoElement.style.maxWidth = "100%";
+      videoElement.classList.add("videoDiv");
 
-      // Append the clipboard text and the button to the message element
-      messageDiv.appendChild(clipboardDiv);
-      clipboardDiv.appendChild(clipButton);
-    } else if (message.startsWith("image://")) {
-      const imgUrl = message.replace("image://", "");
+      // Log to see if videoElement is created
+      console.log("Video element created:", videoElement);
+
+      videoContainer.appendChild(videoElement);
+      messageDiv.appendChild(videoContainer);
+
+      // Log to see if videoContainer is appended
+      console.log("Video container appended:", videoContainer);
+    } else if (isImage) {
+      // Create a separate container for images
       const imageContainer = document.createElement("div");
       imageContainer.classList.add(
         senderName === "You" ? "image-item-right" : "image-item-left"
       );
 
       const imgElement = document.createElement("img");
-      imgElement.src = imgUrl;
-      imgElement.style.width = "100%";
+      imgElement.src = message;
+      imgElement.style.maxWidth = "100%";
 
       const downloadImg = document.createElement("a");
       downloadImg.href = message;
@@ -743,67 +742,127 @@ function onMessageAdded(
       imageContainer.appendChild(imgElement);
       imageContainer.appendChild(downloadImg);
       messageDiv.appendChild(imageContainer);
-    } else if (message.startsWith("video://")) {
-      const videoUrl = message.replace("video://", "").trim();
-
-      // Create container
-      const videoContainer = document.createElement("div");
-      videoContainer.classList.add(
-        senderName === "You" ? "video-item-right" : "video-item-left"
+    } else {
+      // Create the message content element for text
+      const messageElement = document.createElement("div");
+      messageElement.classList.add(
+        senderName === "You" ? "message-item-right" : "message-item-left"
       );
 
-      let videoElement;
+      if (message.startsWith("clip://")) {
+        // Extract the clipboard text by removing the clip:// part
+        const clipboardText = message.replace("clip://", "");
 
-      // Check if the link is a YouTube URL
-      if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
-        // Convert YouTube URL to embeddable format
-        let videoId;
-        if (videoUrl.includes("youtu.be")) {
-          videoId = videoUrl.split("/").pop(); // Extract ID from youtu.be link
+        // Create a span to hold the clipboard text
+        const clipboardDiv = document.createElement("div");
+        clipboardDiv.textContent = clipboardText;
+
+        // Create a button to allow copying the text to the clipboard
+        const clipButton = document.createElement("button");
+        clipboardDiv.classList.add(
+          senderName === "You" ? "clipBoardDiv--right" : "clipBoardDiv--left"
+        );
+        clipButton.classList.add("clipBtn");
+        clipButton.textContent = "Copy";
+        clipButton.addEventListener("click", (e) => {
+          navigator.clipboard.writeText(clipboardText).then(() => {
+            clipButton.textContent = "Copied";
+            console.log("Text copied to clipboard:" + clipboardText);
+
+            setTimeout(() => {
+              clipButton.textContent = "Copy";
+            }, 2000);
+          });
+        });
+
+        // Append the clipboard text and the button to the message element
+        messageDiv.appendChild(clipboardDiv);
+        clipboardDiv.appendChild(clipButton);
+      } else if (message.startsWith("image://")) {
+        const imgUrl = message.replace("image://", "");
+        const imageContainer = document.createElement("div");
+        imageContainer.classList.add(
+          senderName === "You" ? "image-item-right" : "image-item-left"
+        );
+
+        const imgElement = document.createElement("img");
+        imgElement.src = imgUrl;
+        imgElement.style.width = "100%";
+
+        const downloadImg = document.createElement("a");
+        downloadImg.href = message;
+        downloadImg.download = "shared-image";
+        downloadImg.classList.add(
+          senderName === "You"
+            ? "img--download--btn--right"
+            : "img--download--btn--left"
+        );
+        downloadImg.textContent = "Download";
+
+        imageContainer.appendChild(imgElement);
+        imageContainer.appendChild(downloadImg);
+        messageDiv.appendChild(imageContainer);
+      } else if (message.startsWith("video://")) {
+        const videoUrl = message.replace("video://", "").trim();
+
+        // Create container
+        const videoContainer = document.createElement("div");
+        videoContainer.classList.add(
+          senderName === "You" ? "video-item-right" : "video-item-left"
+        );
+
+        let videoElement;
+
+        // Check if the link is a YouTube URL
+        if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
+          // Convert YouTube URL to embeddable format
+          let videoId;
+          if (videoUrl.includes("youtu.be")) {
+            videoId = videoUrl.split("/").pop(); // Extract ID from youtu.be link
+          } else {
+            videoId = new URL(videoUrl).searchParams.get("v"); // Extract ID from youtube.com link
+          }
+          const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+
+          // Create iframe element
+          videoElement = document.createElement("iframe");
+          videoElement.src = embedUrl;
+          videoElement.setAttribute("frameborder", "0");
+          videoElement.setAttribute("allowfullscreen", "true");
         } else {
-          videoId = new URL(videoUrl).searchParams.get("v"); // Extract ID from youtube.com link
+          // Handle non-YouTube links as direct video
+          videoElement = document.createElement("video");
+          videoElement.controls = true;
+          videoElement.width = 320;
+
+          // Create source element for the video
+          const sourceElement = document.createElement("source");
+          sourceElement.src = videoUrl;
+          sourceElement.type = "video/mp4";
+          videoElement.appendChild(sourceElement);
+
+          // Add fallback message for unsupported browsers
+          videoElement.innerHTML +=
+            "Your browser does not support the video tag.";
         }
-        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
 
-        // Create iframe element
-        videoElement = document.createElement("iframe");
-        videoElement.src = embedUrl;
-        videoElement.setAttribute("frameborder", "0");
-        videoElement.setAttribute("allowfullscreen", "true");
-      } else {
-        // Handle non-YouTube links as direct video
-        videoElement = document.createElement("video");
-        videoElement.controls = true;
-        videoElement.width = 320;
+        // Append video or iframe to the container
+        videoContainer.appendChild(videoElement);
+        messageDiv.appendChild(videoContainer);
+      } else if (message.startsWith("weather://")) {
+        const city = message.replace("weather://", "").trim();
+        console.log(`Fetching weather for city: ${city}`); // Log the city being searched
 
-        // Create source element for the video
-        const sourceElement = document.createElement("source");
-        sourceElement.src = videoUrl;
-        sourceElement.type = "video/mp4";
-        videoElement.appendChild(sourceElement);
-
-        // Add fallback message for unsupported browsers
-        videoElement.innerHTML +=
-          "Your browser does not support the video tag.";
-      }
-
-      // Append video or iframe to the container
-      videoContainer.appendChild(videoElement);
-      messageDiv.appendChild(videoContainer);
-    } else if (message.startsWith("weather://")) {
-      const city = message.replace("weather://", "").trim();
-      console.log(`Fetching weather for city: ${city}`); // Log the city being searched
-
-      // Create a container for weather data
-      const weatherContainer = document.createElement("div");
-      weatherContainer.classList.add(
-        senderName === "You" ? "weather-item-right" : "weather-item-left"
-      );
-      getWeather(city)
-        .then((weatherData) => {
-          if (weatherData) {
-            // Format the weather data to display
-            const weatherInfo = `
+        // Create a container for weather data
+        const weatherContainer = document.createElement("div");
+        weatherContainer.classList.add(
+          senderName === "You" ? "weather-item-right" : "weather-item-left"
+        );
+        getWeather(city)
+          .then((weatherData) => {
+            if (weatherData) {
+              // Format the weather data to display
+              const weatherInfo = `
           <div class="weather--card">
           <span class="blob"></span>
           <p style="font-size: 12px; color: #ddd;">${weatherData.name}:</p>
@@ -818,124 +877,128 @@ function onMessageAdded(
           </div>
         `;
 
-            // Create and append weather data to the message div
-            weatherContainer.innerHTML = weatherInfo;
-          } else {
+              // Create and append weather data to the message div
+              weatherContainer.innerHTML = weatherInfo;
+            } else {
+              weatherContainer.innerHTML =
+                "Error: Could not fetch weather data.";
+              weatherContainer.classList.add("error-message");
+            }
+
+            messageDiv.appendChild(weatherContainer);
+          })
+          .catch((err) => {
+            console.error("Error fetching weather data:", err);
             weatherContainer.innerHTML = "Error: Could not fetch weather data.";
-            weatherContainer.classList.add("error-message");
-          }
+            messageDiv.appendChild(weatherContainer);
+          });
+      } else if (message.startsWith("poll://")) {
+        const pollData = message.replace("poll://", "").trim();
+        const pollOptions = pollData.split("|");
+        const pollQuestion = pollOptions[0];
+        const pollChoices = pollOptions.slice(1);
+        const pollID = Date.now();
 
-          messageDiv.appendChild(weatherContainer);
-        })
-        .catch((err) => {
-          console.error("Error fetching weather data:", err);
-          weatherContainer.innerHTML = "Error: Could not fetch weather data.";
-          messageDiv.appendChild(weatherContainer);
+        // Store the poll data in a global polls object
+        polls[pollID] = {
+          question: pollQuestion,
+          choices: pollChoices,
+          votes: Array(pollChoices.length).fill(0), // Array to store votes per choice
+        };
+
+        // Create poll container and assign a unique data attribute with pollID
+        const pollContainer = document.createElement("div");
+        pollContainer.classList.add(
+          senderName === "You" ? "poll-container-right" : "poll-container-left"
+        );
+        pollContainer.dataset.pollId = pollID; // Assign pollID for easier querying
+
+        const pollQuestionElement = document.createElement("p");
+        pollQuestionElement.textContent = pollQuestion;
+        pollContainer.appendChild(pollQuestionElement);
+
+        const pollChoicesContainer = document.createElement("div");
+        pollChoicesContainer.classList.add("poll-choices");
+        pollContainer.appendChild(pollChoicesContainer);
+
+        // Loop through poll choices and create buttons for each choice
+        pollChoices.forEach((choice, index) => {
+          const pollChoiceElement = document.createElement("button");
+          pollChoiceElement.textContent = choice;
+          pollChoiceElement.dataset.index = index;
+          pollChoiceElement.dataset.pollId = pollID; // Attach poll ID to the button
+          pollChoiceElement.addEventListener("click", handleVote); // Add event listener to handle vote
+          pollChoicesContainer.appendChild(pollChoiceElement);
         });
-    } else if (message.startsWith("poll://")) {
-      const pollData = message.replace("poll://", "").trim();
-      const pollOptions = pollData.split("|");
-      const pollQuestion = pollOptions[0];
-      const pollChoices = pollOptions.slice(1);
-      const pollID = Date.now();
 
-      // Store the poll data in a global polls object
-      polls[pollID] = {
-        question: pollQuestion,
-        choices: pollChoices,
-        votes: Array(pollChoices.length).fill(0), // Array to store votes per choice
-      };
+        messageDiv.appendChild(pollContainer); // Append poll container to the message div
+      } else if (message.startsWith("anon://")) {
+        const senderMsg = message.replace("anon://", "");
+        const messageElement = document.createElement("div");
+        messageElement.classList.add(
+          senderName === "You" ? "message-item-right" : "message-item-left"
+        );
+        messageElement.innerHTML = senderMsg;
+        messageDiv.appendChild(messageElement);
+      } else if (message.includes("```")) {
+        const codeRegex = /```([^`]+)```/g;
 
-      // Create poll container and assign a unique data attribute with pollID
-      const pollContainer = document.createElement("div");
-      pollContainer.classList.add(
-        senderName === "You" ? "poll-container-right" : "poll-container-left"
-      );
-      pollContainer.dataset.pollId = pollID; // Assign pollID for easier querying
+        const formattedMessage = message.replace(codeRegex, (match, code) => {
+          // Create a code block with Highlight.js highlighting
+          const highlightedCode = hljs.highlightAuto(code).value;
+          return `<pre><code>${highlightedCode}</code></pre>`;
+        });
 
-      const pollQuestionElement = document.createElement("p");
-      pollQuestionElement.textContent = pollQuestion;
-      pollContainer.appendChild(pollQuestionElement);
+        messageElement.innerHTML += formattedMessage;
+        messageDiv.appendChild(messageElement);
+      } else {
+        const formattedMessage = message.replace(/\n/g, "<br/>");
 
-      const pollChoicesContainer = document.createElement("div");
-      pollChoicesContainer.classList.add("poll-choices");
-      pollContainer.appendChild(pollChoicesContainer);
-
-      // Loop through poll choices and create buttons for each choice
-      pollChoices.forEach((choice, index) => {
-        const pollChoiceElement = document.createElement("button");
-        pollChoiceElement.textContent = choice;
-        pollChoiceElement.dataset.index = index;
-        pollChoiceElement.dataset.pollId = pollID; // Attach poll ID to the button
-        pollChoiceElement.addEventListener("click", handleVote); // Add event listener to handle vote
-        pollChoicesContainer.appendChild(pollChoiceElement);
-      });
-
-      messageDiv.appendChild(pollContainer); // Append poll container to the message div
-    } else if (message.startsWith("anon://")) {
-      const senderMsg = message.replace("anon://", "");
-      const messageElement = document.createElement("div");
-      messageElement.classList.add(
-        senderName === "You" ? "message-item-right" : "message-item-left"
-      );
-      messageElement.innerHTML = senderMsg;
-      messageDiv.appendChild(messageElement);
-    } else if (message.includes("```")) {
-      const codeRegex = /```([^`]+)```/g;
-
-      const formattedMessage = message.replace(codeRegex, (match, code) => {
-        // Create a code block with Highlight.js highlighting
-        const highlightedCode = hljs.highlightAuto(code).value;
-        return `<pre><code>${highlightedCode}</code></pre>`;
-      });
-
-      messageElement.innerHTML += formattedMessage;
-      messageDiv.appendChild(messageElement);
-    } else {
-      const formattedMessage = message.replace(/\n/g, "<br/>");
-
-      messageElement.innerHTML = formattedMessage;
-      messageDiv.appendChild(messageElement);
-    }
-
-    function handleVote(event) {
-      const pollID = event.target.dataset.pollId; // Get pollID from dataset
-      const choiceIndex = event.target.dataset.index;
-
-      // Increment vote for the selected choice
-      polls[pollID].votes[choiceIndex]++;
-
-      // Update the poll results UI
-      updatePollResults(pollID);
-    }
-
-    function updatePollResults(pollID) {
-      const poll = polls[pollID];
-      const totalVotes = poll.votes.reduce((sum, votes) => sum + votes, 0);
-
-      // Select the correct poll container using pollID
-      const pollContainer = document.querySelector(
-        `[data-poll-id="${pollID}"] .poll-choices`
-      );
-
-      if (!pollContainer) {
-        console.error(`Poll container not found for pollID: ${pollID}`);
-        return;
+        messageElement.innerHTML = formattedMessage;
+        messageDiv.appendChild(messageElement);
       }
 
-      pollContainer.innerHTML = ""; // Clear current UI
+      function handleVote(event) {
+        const pollID = event.target.dataset.pollId; // Get pollID from dataset
+        const choiceIndex = event.target.dataset.index;
 
-      // Update poll choices with votes and percentages
-      poll.choices.forEach((choice, index) => {
-        const pollChoiceElement = document.createElement("div");
-        pollChoiceElement.classList.add("pollResult");
-        const votesForChoice = poll.votes[index];
-        const percentage =
-          totalVotes > 0 ? ((votesForChoice / totalVotes) * 100).toFixed(2) : 0;
+        // Increment vote for the selected choice
+        polls[pollID].votes[choiceIndex]++;
 
-        pollChoiceElement.textContent = `${choice} - ${votesForChoice} votes (${percentage}%)`;
-        pollContainer.appendChild(pollChoiceElement);
-      });
+        // Update the poll results UI
+        updatePollResults(pollID);
+      }
+
+      function updatePollResults(pollID) {
+        const poll = polls[pollID];
+        const totalVotes = poll.votes.reduce((sum, votes) => sum + votes, 0);
+
+        // Select the correct poll container using pollID
+        const pollContainer = document.querySelector(
+          `[data-poll-id="${pollID}"] .poll-choices`
+        );
+
+        if (!pollContainer) {
+          console.error(`Poll container not found for pollID: ${pollID}`);
+          return;
+        }
+
+        pollContainer.innerHTML = ""; // Clear current UI
+
+        // Update poll choices with votes and percentages
+        poll.choices.forEach((choice, index) => {
+          const pollChoiceElement = document.createElement("div");
+          pollChoiceElement.classList.add("pollResult");
+          const votesForChoice = poll.votes[index];
+          const percentage =
+            totalVotes > 0
+              ? ((votesForChoice / totalVotes) * 100).toFixed(2)
+              : 0;
+
+          pollChoiceElement.textContent = `${choice} - ${votesForChoice} votes (${percentage}%)`;
+          pollContainer.appendChild(pollChoiceElement);
+        });
+      }
     }
   }
   // Function to update the poll results

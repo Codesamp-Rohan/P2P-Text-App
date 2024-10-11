@@ -57,3 +57,32 @@ whiteBoardCloseBtn.addEventListener("click", (e) => {
   outerScreen.classList.toggle("hidden");
   whiteBoardControl.classList.add("hidden");
 });
+
+// Voice chat
+
+const voiceRoomBtn = document.querySelector("#create--voice--room");
+const voiceRoom = document.querySelector("#voiceRoom");
+const voiceChatMic = document.querySelector(".voice--button");
+const voiceChatMicImg = document.querySelector(".voice--chat--mic");
+const voiceCloseBtn = document.querySelector(".closeVoice");
+
+voiceRoomBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  voiceRoom.classList.remove("hidden");
+});
+
+// let micAllowed = false;
+
+// voiceChatMic.addEventListener("click", () => {
+//   micAllowed = !micAllowed;
+//   if (micAllowed) {
+//     voiceChatMicImg.src = "./assets/mic.png";
+//   } else {
+//     voiceChatMicImg.src = "./assets/mute.png";
+//   }
+// });
+
+voiceCloseBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  voiceRoom.classList.add("hidden");
+});
