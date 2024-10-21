@@ -18,6 +18,10 @@ body {
   padding: 40px;
 }
 
+code {
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+}
+
 #bar {
   background: #000;
   backdrop-filter: blur(64px);
@@ -468,7 +472,7 @@ input#myFile {
   background-color: transparent;
   cursor: pointer;
   font-size: 10px;
-  background-color: #0000003b;
+  /* background-color: #0000003b; */
   padding-inline: 10px;
   border-radius: 10px;
   border: 0.4px solid #777;
@@ -562,6 +566,44 @@ input#myFile {
   gap: 5px;
   color: #aaa;
 }
+.peer--btn {
+  background-color: transparent;
+  cursor: pointer;
+  width: fit-content;
+  border: 0;
+}
+.members--list {
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+  height: 60%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1010;
+  background-color: #2222226b;
+  border-radius: 20px;
+  padding: 30px;
+  border: 1px solid #444;
+  color: #eee;
+}
+.members--list li {
+  text-decoration: none;
+  list-style-type: none;
+  padding-block: 10px;
+  border-bottom: 0.5px solid #444;
+}
+.members--close--btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 1002;
+  cursor: pointer;
+}
+.members--close--btn img {
+  transform: rotate(45deg);
+}
 .seed--msg {
   color: #aaa;
   display: flex;
@@ -583,28 +625,40 @@ input#myFile {
 }
 .add--popUp {
   color: #eee;
-  background-color: #333;
+  background-color: #121212;
   position: absolute;
   left: 0;
   bottom: 7%;
-  border-radius: 10px 10px 10px 0;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 0.5px;
-  border: 0.5px solid #333;
+  border: 0.5px solid #555;
+  width: 18%;
+  padding: 4px;
 }
 .add--popUp label {
   padding: 10px 20px;
+  border-radius: 10px;
   border: 0px;
-  background-color: #121212;
   border-radius: 0;
-  color: #eee;
+  color: #bbb;
   cursor: pointer;
   font-size: 12px;
   text-transform: capitalize;
-  align-self: flex-start;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+}
+.add--popUp label:hover {
+  background-color: #222222;
+  border-radius: 10px;
+}
+.add--popUp label img {
+  width: 16px;
+  height: 16px;
 }
 .file-upload-message {
   align-self: flex-end;

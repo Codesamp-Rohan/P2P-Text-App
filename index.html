@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="./voice.css">
     <script type="module" src="./app.js"></script>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/dark.min.css">
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
 
   </head>
@@ -117,6 +117,13 @@
       <div class="leaving hidden">Leaving...</div>
 
       <div id="chat" class="hidden">
+        <div class="members--list hidden">
+          <button class="members--close--btn button">
+            <img class="logo" src="./assets/plus.png" />
+          </button>
+          <h2>Members</h2>
+          <ul id="members"></ul>
+        </div>
         <div class="details--popUp hidden">
           <h1 class="details--header">Details</h1>
           <h3 class="grpName--text" style="background-color: #333; border: 0;">Holesail.io</h3>
@@ -125,11 +132,11 @@
             <img src="./assets/seed.png" style="width: 14px; margin-left: 2px;" class="peers--icon" />
             <span id="chat-room-seed"></span>
           </div>
-            <div class="peer--member">
+            <button class="peer--member peer--btn">
               <img src="./assets/peer--member.png" class="peers--icon" />
               <span id="peers-count">1</span>
               members</div>
-            </div>
+            </button>
         </div>
         <div id="header">
           <div id="details">
@@ -192,16 +199,27 @@
         </div>
         <div class="add--popUp hidden">
            <label for="image-upload">
-              <p>Add Image</p>
+            <img src="./assets/shareImage.png"/>
+              <p>Share Image</p>
             </label>
-          <label class="sticker--btn">Add Sticker</label>
-          <label for="file-upload">Add File</label>
-          <label for="video-upload">Add Video</label>
-          <label for="audio-upload">Add Audio</label>
+          <label class="sticker--btn">
+            <img src="./assets/shareSticker.png" />
+            <p>Share Sticker</p></label>
+          <label for="file-upload">
+            <img src="./assets/shareFile.png" />
+            <p>Share File</p>
+          </label>
+          <label for="video-upload">
+            <img src="./assets/shareVideo.png" />
+            <p>Share Video</p>
+          </label>
+          <label for="audio-upload">
+            <img src="./assets/shareAudio.png" /><p>Share Audio</p></label>
         </div>
         <div class="bottom--input--section">
+          <button class="share--location--btn" style="background-color: transparent; border: 0;"><img src="./assets/location.png" class="icon" style="width: 20px;"/></button>
           <button class="add--btn"><img src="./assets/plus.png" class="icon"/></button>
-           <button id="create--voice--room" class="button hidden">Voice</button>
+          <button id="create--voice--room" class="button hidden">Voice</button>
           <form id="message-form">
             <input type="file" accept="image/*" id="image-upload" style="display: none" />
             <input type="file" accept="file/*" id="file-upload" style="display: none" />

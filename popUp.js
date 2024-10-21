@@ -6,6 +6,8 @@ outerScreen.addEventListener("click", (e) => {
   e.preventDefault();
   whiteBoard.classList.add("hidden");
   whiteBoardControl.classList.add("hidden");
+  detailsPopUp.classList.add("hidden");
+  membersList.classList.add("hidden");
 });
 
 detailsShowBtn.addEventListener("click", (e) => {
@@ -58,6 +60,23 @@ whiteBoardCloseBtn.addEventListener("click", (e) => {
   whiteBoardControl.classList.add("hidden");
 });
 
+const membersOpenBtn = document.querySelector(".peer--btn");
+const membersList = document.querySelector(".members--list");
+const memberListCloseBtn = document.querySelector(".members--close--btn");
+
+membersOpenBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  membersList.classList.remove("hidden");
+  outerScreen.classList.remove("hidden");
+  detailsPopUp.classList.add("hidden");
+});
+
+memberListCloseBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  membersList.classList.add("hidden");
+  outerScreen.classList.add("hidden");
+});
+
 // Voice chat
 
 const voiceRoomBtn = document.querySelector("#create--voice--room");
@@ -70,17 +89,6 @@ voiceRoomBtn.addEventListener("click", (e) => {
   e.preventDefault();
   voiceRoom.classList.remove("hidden");
 });
-
-// let micAllowed = false;
-
-// voiceChatMic.addEventListener("click", () => {
-//   micAllowed = !micAllowed;
-//   if (micAllowed) {
-//     voiceChatMicImg.src = "./assets/mic.png";
-//   } else {
-//     voiceChatMicImg.src = "./assets/mute.png";
-//   }
-// });
 
 voiceCloseBtn.addEventListener("click", (e) => {
   e.preventDefault();

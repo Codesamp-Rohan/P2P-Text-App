@@ -17,6 +17,47 @@ const detailsPopUp = document.querySelector(".details--popUp");
 
 const polls = {};
 
+let members = [];
+
+const shareLocationBtn = document.querySelector(".share--location--btn");
+
+shareLocationBtn.addEventListener("click", getLocation);
+
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(sendLocation, showError);
+  } else {
+    alert("Geolocation is not supported by this browser.");
+  }
+}
+
+function sendLocation() {
+  const longitude = position.coords.longitude;
+  const latitude = position.coords.latitude;
+
+  console.log(longitude, latitude);
+
+  // Here you can send this message in the chat
+  sendMessage(locationMessage);
+}
+
+function showError(error) {
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      alert("User denied the request for Geolocation.");
+      break;
+    case error.POSITION_UNAVAILABLE:
+      alert("Location information is unavailable.");
+      break;
+    case error.TIMEOUT:
+      alert("The request to get user location timed out.");
+      break;
+    case error.UNKNOWN_ERROR:
+      alert("An unknown error occurred.");
+      break;
+  }
+}
+
 // CANVA CODE
 
 // Canvas setup
@@ -254,8 +295,9 @@ document
     if (videoFile) {
       try {
         const videoBinary = await convertVideoToBinary(videoFile);
-        // Convert ArrayBuffer to Base64 for sending
         const base64Video = b4a.toString(new Uint8Array(videoBinary), "base64");
+        console.log("Base64 Video Data:", base64Video); // Debugging line
+
         const messageData = {
           name:
             userName ||
@@ -370,6 +412,8 @@ function notifyUserLeft() {
     peer.write(leaveMessageBuffer);
   }
 
+  members = members.filter((member) => member !== userName);
+
   setTimeout(() => {
     leavingDiv.classList.add("hidden");
   }, 3000);
@@ -434,6 +478,21 @@ eraseBtn.addEventListener("click", () => {
   clearCanvas();
 });
 //**************** END ******************//
+function updateMemberList() {
+  const membersListElement = document.getElementById("members");
+  membersListElement.innerHTML = "";
+
+  members.forEach((member) => {
+    console.log(member);
+
+    const listItem = document.createElement("li");
+    listItem.textContent = member;
+    membersListElement.appendChild(listItem);
+  });
+}
+// Member list show js
+
+//
 
 swarm.on("connection", (peer) => {
   const hexCode = b4a.toString(peer.remotePublicKey, "hex").substr(0, 6);
@@ -446,6 +505,18 @@ swarm.on("connection", (peer) => {
     if (data.system) {
       // Display system messages differently
       onSystemMessageAdded(data.message);
+      if (data.message.includes("joined the chat")) {
+        const newMemberName = data.message.split(" ")[1];
+        if (!members.includes(newMemberName)) {
+          members.push(newMemberName);
+          updateMemberList();
+        }
+      }
+      if (data.message.includes("has left the chat")) {
+        const leftMemberName = data.message.split(" ")[0];
+        members = members.filter((members) => members !== leftMemberName);
+        updateMemberList();
+      }
     } else if (data.isFile) {
       const fileType = data.fileType;
       onMessageAdded(
@@ -566,6 +637,8 @@ async function joinSwarm(seedBuffer) {
   const joinName =
     userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6);
 
+  members.push(joinName);
+  updateMemberList();
   const joinMessage = {
     system: true,
     message: `🥳 ${joinName} joined the chat 🥂🥂`,
@@ -707,17 +780,10 @@ function onMessageAdded(
       const videoElement = document.createElement("video");
       videoElement.src = "data:video/mp4;base64," + message; // Use Base64 string
       videoElement.controls = true;
-      videoElement.style.maxWidth = "100%";
-      videoElement.classList.add("videoDiv");
-
-      // Log to see if videoElement is created
-      console.log("Video element created:", videoElement);
-
+      videoElement.style.maxWidth = "100%"; // Ensure it fits within the container
       videoContainer.appendChild(videoElement);
-      messageDiv.appendChild(videoContainer);
 
-      // Log to see if videoContainer is appended
-      console.log("Video container appended:", videoContainer);
+      messageDiv.appendChild(videoContainer);
     } else if (isImage) {
       // Create a separate container for images
       const imageContainer = document.createElement("div");

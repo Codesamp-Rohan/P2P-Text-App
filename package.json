@@ -18,7 +18,7 @@
       "https://api.openweathermap.org",
       "https://highlightjs.org",
       "https://cdn.jsdelivr.net",
-      "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css"
+      "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/dark.min.css"
     ]
   },
   "type": "module",
@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "b4a": "^1.6.6",
+    "hypercore": "^10.37.25",
     "hypercore-crypto": "^3.4.2",
     "hyperswarm": "^4.8.2"
   }
