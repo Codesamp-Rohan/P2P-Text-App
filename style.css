@@ -587,6 +587,7 @@ input#myFile {
   padding: 30px;
   border: 1px solid #444;
   color: #eee;
+  backdrop-filter: blur(20px);
 }
 .members--list li {
   text-decoration: none;
@@ -898,4 +899,23 @@ canvas {
 }
 .canva--highlight {
   background-color: #ccc;
+}
+.message--menu--img {
+  width: 20px;
+  height: 20px;
+}
+.message--menu--left {
+  display: none;
+}
+.message--menu--right {
+  width: fit-content;
+  background-color: transparent;
+  border: 0;
+  border-radius: 10px;
+  align-self: flex-end;
+  position: absolute;
+  z-index: 100;
+  top: 19%;
+  right: -2%;
+  cursor: pointer;
 }

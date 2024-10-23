@@ -17,8 +17,6 @@ const detailsPopUp = document.querySelector(".details--popUp");
 
 const polls = {};
 
-let members = [];
-
 const shareLocationBtn = document.querySelector(".share--location--btn");
 
 shareLocationBtn.addEventListener("click", getLocation);
@@ -412,7 +410,7 @@ function notifyUserLeft() {
     peer.write(leaveMessageBuffer);
   }
 
-  members = members.filter((member) => member !== userName);
+  userList = userList.filter((member) => member !== userName);
 
   setTimeout(() => {
     leavingDiv.classList.add("hidden");
@@ -447,18 +445,30 @@ document.querySelector("#popup--form").addEventListener("submit", (e) => {
   const nameInput = document.querySelector("#popUp--input");
   const newName = nameInput.value.trim();
 
-  if (newName != "") {
+  if (newName !== "") {
     console.log(`New name set: ${newName}`);
 
-    const prevName =
+    let prevName =
       userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6);
     userName = newName;
 
+    // Update userList by finding the index of prevName and changing their name to newName
+    const userIndex = userList.indexOf(prevName);
+    if (userIndex !== -1) {
+      userList[userIndex] = newName; // Update the name in the userList
+    } else {
+      userList.push(newName); // If prevName is not found, just add the new name
+    }
+
+    // Call this function to update the UI member list
+
+    // Hide the popup after the name is changed
     popup.classList.add("hidden");
     outerScreen.classList.add("hidden");
 
     nameInput.value = "";
 
+    // Notify other peers about the name change
     const changeName = {
       system: true,
       message: `${prevName} changed its name to ${newName}`,
@@ -468,6 +478,7 @@ document.querySelector("#popup--form").addEventListener("submit", (e) => {
 
     const peers = [...swarm.connections];
     for (const peer of peers) peer.write(newNameMsgBuffer);
+    updateMemberList();
   } else {
     console.log("Name input cannot be empty.");
   }
@@ -482,7 +493,7 @@ function updateMemberList() {
   const membersListElement = document.getElementById("members");
   membersListElement.innerHTML = "";
 
-  members.forEach((member) => {
+  userList.forEach((member) => {
     console.log(member);
 
     const listItem = document.createElement("li");
@@ -494,8 +505,14 @@ function updateMemberList() {
 
 //
 
+let userList = [];
+
 swarm.on("connection", (peer) => {
   const hexCode = b4a.toString(peer.remotePublicKey, "hex").substr(0, 6);
+
+  userList.push(hexCode);
+  updateMemberList();
+
   peer.on("data", (message) => {
     console.log("Message:", message);
     const data = JSON.parse(message.toString()); // Parse the message data
@@ -507,16 +524,25 @@ swarm.on("connection", (peer) => {
       onSystemMessageAdded(data.message);
       if (data.message.includes("joined the chat")) {
         const newMemberName = data.message.split(" ")[1];
-        if (!members.includes(newMemberName)) {
-          members.push(newMemberName);
+        if (!userList.includes(newMemberName)) {
+          userList.push(newMemberName);
           updateMemberList();
         }
       }
       if (data.message.includes("has left the chat")) {
         const leftMemberName = data.message.split(" ")[0];
-        members = members.filter((members) => members !== leftMemberName);
+        userList = userList.filter((members) => members !== leftMemberName);
         updateMemberList();
       }
+    } else if (data.actionType === "edit") {
+      const messageElements = document.querySelectorAll(
+        ".message-item-left, .message-item-right"
+      );
+      messageElements.forEach((messageElement) => {
+        if (messageElement.textContent === data.originalMessage) {
+          messageElement.textContent = data.message;
+        }
+      });
     } else if (data.isFile) {
       const fileType = data.fileType;
       onMessageAdded(
@@ -563,6 +589,8 @@ swarm.on("connection", (peer) => {
 swarm.on("update", () => {
   document.querySelector("#peers-count").textContent =
     swarm.connections.size + 1;
+
+  updateMemberList();
 });
 
 const createChatRoomBtn = document.querySelector("#create--chat--room--btn");
@@ -574,10 +602,9 @@ document.querySelector("#message-form").addEventListener("submit", sendMessage);
 document.querySelector("#message").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     if (e.shiftKey) {
-      // Allow a new line when Shift + Enter is pressed
-      return; // Do nothing, just let it add a new line
+      return;
     }
-    e.preventDefault(); // Prevents a new line from being added
+    e.preventDefault();
     sendMessage(e);
   }
 });
@@ -637,7 +664,7 @@ async function joinSwarm(seedBuffer) {
   const joinName =
     userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6);
 
-  members.push(joinName);
+  userList.push(joinName);
   updateMemberList();
   const joinMessage = {
     system: true,
@@ -740,6 +767,20 @@ function onMessageAdded(
   ); // Add a class for styling
   timeElement.textContent = timeString;
 
+  const menuBtn = document.createElement("button");
+  const menuBtnImg = document.createElement("img");
+  menuBtnImg.src = `./assets/menu.png`;
+  menuBtnImg.classList.add("message--menu--img");
+  menuBtn.appendChild(menuBtnImg);
+  menuBtn.classList.add(
+    senderName === "You" ? "message--menu--right" : "message--menu--left"
+  );
+  messageDiv.appendChild(menuBtn);
+
+  menuBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    messagePopUp(e, messageDiv, senderName);
+  });
   // Append the time element to the messageDiv
 
   if (fileType) {
@@ -1190,3 +1231,80 @@ stickerContainer.addEventListener("click", (e) => {
   });
 });
 //********************************************************************************//
+
+function messagePopUp(event, messageDiv, senderName) {
+  // Remove any existing popup
+  const existingMenu = document.querySelector(".message-menu");
+  if (existingMenu) {
+    existingMenu.remove();
+  }
+
+  const messageMenu = document.createElement("div");
+  messageMenu.classList.add("message-menu");
+
+  // Create options for the menu
+  const editMessage = document.createElement("button");
+  const deleteMessage = document.createElement("button");
+
+  editMessage.textContent = "Edit";
+  deleteMessage.textContent = "Delete";
+
+  // Add event listeners for the options
+  editMessage.addEventListener("click", () => {
+    const messageText = messageDiv.querySelector(
+      ".message-item-left, .message-item-right"
+    );
+    if (messageText) {
+      const originalMessage = messageText.textContent;
+      // Show the edit dialog
+      const editDialog = document.getElementById("edit-dialog");
+      const editInput = document.getElementById("edit-input");
+      editInput.value = originalMessage; // Set the current message to the input field
+      editDialog.classList.remove("hidden"); // Show the dialog
+
+      // Save button functionality
+      document.getElementById("save-edit").onclick = () => {
+        const newMessage = editInput.value;
+        if (newMessage.trim() !== "") {
+          messageText.textContent = newMessage; // Update the message in the UI
+          // Optionally, send the updated message to peers
+          const updateMessageData = {
+            actionType: "edit",
+            name: senderName,
+            message: newMessage,
+            originalMessage: originalMessage,
+          };
+          // sendMessage(newMessage); // Uncomment if needed
+
+          const messageBuffer = Buffer.from(JSON.stringify(updateMessageData));
+          const peers = [...swarm.connections];
+          for (const peer of peers) {
+            peer.write(messageBuffer);
+          }
+        }
+        editDialog.classList.add("hidden"); // Hide the dialog after saving
+      };
+
+      // Cancel button functionality
+      document.getElementById("cancel-edit").onclick = () => {
+        editDialog.classList.add("hidden"); // Hide the dialog on cancel
+      };
+    }
+    messageMenu.remove(); // Close the menu after editing
+  });
+
+  deleteMessage.addEventListener("click", () => {
+    if (confirm("Are you sure you want to delete this message?")) {
+      messageDiv.remove(); // Remove the message from the UI
+      // Optionally, send a delete message to peers
+      // sendDeleteMessage(senderName, message); // Uncomment if needed
+    }
+    messageMenu.remove(); // Close the menu after deleting
+  });
+
+  // Append options to the menu
+  messageMenu.appendChild(editMessage);
+  messageMenu.appendChild(deleteMessage);
+
+  messageDiv.appendChild(messageMenu);
+}
