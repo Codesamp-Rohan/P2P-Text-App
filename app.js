@@ -432,6 +432,12 @@ function openPopUp() {
 
 outerScreen.addEventListener("click", closePopUp);
 
+document.addEventListener("click", (e) => {
+  if (popup.contains("hidden")) {
+    closePopUp();
+  }
+});
+
 function closePopUp() {
   popup.classList.add("hidden");
   outerScreen.classList.add("hidden");
@@ -1300,6 +1306,12 @@ function messagePopUp(event, messageDiv, senderName) {
       // sendDeleteMessage(senderName, message); // Uncomment if needed
     }
     messageMenu.remove(); // Close the menu after deleting
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!messageMenu.contains(e.target) && !messageDiv.contains(e.target)) {
+      messageMenu.remove(); // Close the menu if clicked outside
+    }
   });
 
   // Append options to the menu

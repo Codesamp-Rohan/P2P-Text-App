@@ -48,6 +48,7 @@
   width: 100%;
   text-align: left;
   color: #ecdfcc;
+  filter: grayscale(1);
 }
 
 .message-menu button:hover {

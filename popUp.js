@@ -16,11 +16,23 @@ detailsShowBtn.addEventListener("click", (e) => {
   outerScreen.classList.toggle("hidden");
 });
 
+const addPopUp = document.querySelector(".add--popUp");
+
 document.querySelector(".add--btn").addEventListener("click", () => {
-  document.querySelector(".add--popUp").classList.toggle("hidden");
+  addPopUp.classList.toggle("hidden");
 });
-document.querySelector(".add--popUp").addEventListener("click", () => {
-  document.querySelector(".add--popUp").classList.add("hidden");
+addPopUp.addEventListener("click", () => {
+  addPopUp.classList.add("hidden");
+});
+
+document.addEventListener("click", (e) => {
+  if (
+    !addPopUp.contains(e.target) &&
+    !document.querySelector(".add--btn").contains(e.target)
+  ) {
+    addPopUp.classList.add("hidden");
+    outerScreen.classList.add("hidden"); // Hide the outer screen as well
+  }
 });
 
 const termsPopUp = document.querySelector(".terms--popUp");
