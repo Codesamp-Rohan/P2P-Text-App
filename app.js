@@ -432,12 +432,6 @@ function openPopUp() {
 
 outerScreen.addEventListener("click", closePopUp);
 
-document.addEventListener("click", (e) => {
-  if (popup.contains("hidden")) {
-    closePopUp();
-  }
-});
-
 function closePopUp() {
   popup.classList.add("hidden");
   outerScreen.classList.add("hidden");
@@ -540,13 +534,32 @@ swarm.on("connection", (peer) => {
         userList = userList.filter((members) => members !== leftMemberName);
         updateMemberList();
       }
-    } else if (data.actionType === "edit") {
+    } else if (data.actionType === "pin") {
+      console.log("Pin message received:", data.pinMsg); // Debugging line
+      document.querySelector(".pinned--message").classList.remove("hidden");
+      document.querySelector(".pinned--messageMsg").textContent = data.pinMsg;
+    } else if (data.actionType === "unPin") {
+      document.querySelector(".pinned--message").classList.add("hidden");
+      document.querySelector(".pinned--messageMsg").textContent = data.pinMsg;
+    } else if (data.actionType === "editMsg") {
       const messageElements = document.querySelectorAll(
         ".message-item-left, .message-item-right"
       );
       messageElements.forEach((messageElement) => {
         if (messageElement.textContent === data.originalMessage) {
           messageElement.textContent = data.message;
+        }
+      });
+    } else if (data.actionType === "deleteMsg") {
+      // Select all message elements (both left and right)
+      const messageElements = document.querySelectorAll(
+        ".message-item-left, .message-item-right"
+      );
+
+      messageElements.forEach((messageElement) => {
+        const messageId = messageElement.getAttribute("data-id"); // Get the unique message ID
+        if (messageId === data.messageId) {
+          messageElement.textContent = "message deleted"; // Update only the matching message
         }
       });
     } else if (data.isFile) {
@@ -569,13 +582,13 @@ swarm.on("connection", (peer) => {
       context.stroke();
       context.moveTo(data.x, data.y);
     } else {
-      const senderName = data.name || hexCode;
-      const receivedMessage = data.message;
-      const isImage = data.isImage;
-      const isAdmin = data.isAdmin;
-      const isSticker = data.isSticker;
-      const isVideo = data.isVideo;
-      const isAudio = data.isAudio;
+      let senderName = data.name || hexCode;
+      let receivedMessage = data.message;
+      let isImage = data.isImage;
+      let isAdmin = data.isAdmin;
+      let isSticker = data.isSticker;
+      let isVideo = data.isVideo;
+      let isAudio = data.isAudio;
 
       onMessageAdded(
         senderName,
@@ -785,7 +798,7 @@ function onMessageAdded(
 
   menuBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    messagePopUp(e, messageDiv, senderName);
+    messagePopUp(e, messageDiv, senderName, isAdmin);
   });
   // Append the time element to the messageDiv
 
@@ -861,6 +874,11 @@ function onMessageAdded(
       messageElement.classList.add(
         senderName === "You" ? "message-item-right" : "message-item-left"
       );
+
+      const messageId = `msg-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      messageElement.setAttribute("data-id", messageId); // Add the unique ID as a data attribute
 
       if (message.startsWith("clip://")) {
         // Extract the clipboard text by removing the clip:// part
@@ -1238,7 +1256,7 @@ stickerContainer.addEventListener("click", (e) => {
 });
 //********************************************************************************//
 
-function messagePopUp(event, messageDiv, senderName) {
+function messagePopUp(event, messageDiv, senderName, isAdmin) {
   // Remove any existing popup
   const existingMenu = document.querySelector(".message-menu");
   if (existingMenu) {
@@ -1249,9 +1267,44 @@ function messagePopUp(event, messageDiv, senderName) {
   messageMenu.classList.add("message-menu");
 
   // Create options for the menu
+  const pinMessage = document.createElement("button");
   const editMessage = document.createElement("button");
   const deleteMessage = document.createElement("button");
 
+  if (isAdmin) {
+    pinMessage.textContent = "Pin";
+    pinMessage.addEventListener("click", () => {
+      if (!isAdmin) {
+        alert("Only admins can pin messages.");
+        return; // Prevent non-admins from pinning
+      }
+
+      const messageText = messageDiv.querySelector(
+        ".message-item-left, .message-item-right"
+      );
+      if (messageText) {
+        const pinMsg = messageText.textContent;
+        console.log("Pin message text:", pinMsg);
+
+        document.querySelector(".pinned--message").classList.remove("hidden");
+        document.querySelector(".pinned--messageMsg").textContent = pinMsg;
+
+        const pinMessageData = {
+          actionType: "pin",
+          name: senderName,
+          pinMsg: pinMsg,
+          isAdmin: true, // Include admin status in the message
+        };
+
+        const messageBuffer = Buffer.from(JSON.stringify(pinMessageData));
+        const peers = [...swarm.connections];
+        for (const peer of peers) peer.write(messageBuffer); // Send to all peers
+      }
+      messageMenu.remove();
+    });
+
+    messageMenu.appendChild(pinMessage); // Only append if the user is an admin
+  }
   editMessage.textContent = "Edit";
   deleteMessage.textContent = "Delete";
 
@@ -1275,7 +1328,7 @@ function messagePopUp(event, messageDiv, senderName) {
           messageText.textContent = newMessage; // Update the message in the UI
           // Optionally, send the updated message to peers
           const updateMessageData = {
-            actionType: "edit",
+            actionType: "editMsg",
             name: senderName,
             message: newMessage,
             originalMessage: originalMessage,
@@ -1301,9 +1354,34 @@ function messagePopUp(event, messageDiv, senderName) {
 
   deleteMessage.addEventListener("click", () => {
     if (confirm("Are you sure you want to delete this message?")) {
-      messageDiv.remove(); // Remove the message from the UI
-      // Optionally, send a delete message to peers
-      // sendDeleteMessage(senderName, message); // Uncomment if needed
+      const messageText = messageDiv.querySelector(
+        ".message-item-left, .message-item-right"
+      );
+
+      if (messageText) {
+        const messageId = messageDiv.getAttribute("data-id");
+        const originalMessage = messageText.textContent;
+
+        messageText.textContent = "message deleted"; // Remove the message from the UI
+
+        // Remove the menu button
+        const menuBtn = messageDiv.querySelector(
+          ".message--menu--left, .message--menu--right"
+        );
+        if (menuBtn) {
+          menuBtn.remove(); // Remove the menu button from the message
+        }
+
+        const deleteMessageData = {
+          actionType: "deleteMsg",
+          name: senderName,
+          messageId: messageId,
+        };
+
+        const messageBuffer = Buffer.from(JSON.stringify(deleteMessageData));
+        const peers = [...swarm.connections];
+        for (let peer of peers) peer.write(messageBuffer);
+      }
     }
     messageMenu.remove(); // Close the menu after deleting
   });
@@ -1315,8 +1393,32 @@ function messagePopUp(event, messageDiv, senderName) {
   });
 
   // Append options to the menu
+  messageMenu.appendChild(pinMessage);
   messageMenu.appendChild(editMessage);
   messageMenu.appendChild(deleteMessage);
 
   messageDiv.appendChild(messageMenu);
 }
+
+const unPin = document.querySelector(".unPin");
+unPin.addEventListener("click", (e) => {
+  e.preventDefault();
+
+  if (!isAdmin) {
+    alert("Only admins can unpin messages.");
+    return; // Prevent non-admins from unpinning
+  }
+
+  const unPinMsgData = {
+    actionType: "unPin",
+    isAdmin: true, // Include admin status in the message
+  };
+
+  const messageBuffer = Buffer.from(JSON.stringify(unPinMsgData));
+  const peers = [...swarm.connections];
+  for (let peer of peers) peer.write(messageBuffer);
+
+  // Update local UI (remove pin for the admin)
+  document.querySelector(".pinned--message").classList.add("hidden");
+  document.querySelector(".pinned--messageMsg").textContent = "";
+});

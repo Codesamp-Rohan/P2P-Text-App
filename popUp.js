@@ -31,7 +31,6 @@ document.addEventListener("click", (e) => {
     !document.querySelector(".add--btn").contains(e.target)
   ) {
     addPopUp.classList.add("hidden");
-    outerScreen.classList.add("hidden"); // Hide the outer screen as well
   }
 });
 

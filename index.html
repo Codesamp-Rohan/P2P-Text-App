@@ -187,7 +187,15 @@
           </div>
           <canvas id="whiteboard" class="hidden" width="950" height="600"></canvas>
        </div>
-        <div id="messages"></div>
+        <div id="messages">
+          <div class="pinned--message hidden">
+            <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="./assets/pin.png" class="logo" />
+            <p class="pinned--messageMsg"></p>
+            </div>
+            <button class="unPin">unpin</button>
+          </div>
+        </div>
         <div id="sticker-picker" class="sticker-picker">
           <button class="sticker--close--btn">
             <p class="text">X</p>

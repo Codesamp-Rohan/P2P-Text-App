@@ -162,7 +162,7 @@ input:focus {
 
 /* Scrollbar track */
 ::-webkit-scrollbar-track {
-  background: #3c3d37; /* Background color of the scrollbar track */
+  background: #3c3d3738; /* Background color of the scrollbar track */
   border-radius: 10px; /* Rounded corners for the track */
 }
 
@@ -917,5 +917,29 @@ canvas {
   z-index: 100;
   top: 19%;
   right: -2%;
+  cursor: pointer;
+}
+.pinned--message {
+  color: #ecdfcc;
+  background-color: #3c3d3778;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 100;
+  position: sticky;
+  top: 0;
+  width: 100%;
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 200;
+}
+.unPin {
+  font-size: 10px;
+  padding: 6px;
+  border: 1px solid #444;
+  background-color: #00000059;
+  color: #eee;
+  border-radius: 10px;
   cursor: pointer;
 }
