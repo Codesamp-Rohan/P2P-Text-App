@@ -1602,7 +1602,12 @@ function updateReactionCount(messageDiv, emoji, delta) {
   if (!reactionContainer) {
     reactionContainer = document.createElement("div");
     reactionContainer.classList.add("reaction-container");
-    messageDiv.appendChild(reactionContainer);
+
+    if (messageDiv.children.length > 1) {
+      messageDiv.insertBefore(reactionContainer, messageDiv.children[2]);
+    } else {
+      messageDiv.appendChild(reactionContainer);
+    }
   }
 
   if (messageDiv.querySelector(".message-item-right")) {
