@@ -17,6 +17,10 @@ const detailsPopUp = document.querySelector(".details--popUp");
 
 const polls = {};
 
+const processedMessageIds = new Set(); // Track processed message IDs
+const userReactions = new Map();
+const peerReactions = new Map();
+
 const shareLocationBtn = document.querySelector(".share--location--btn");
 
 shareLocationBtn.addEventListener("click", getLocation);
@@ -534,6 +538,24 @@ swarm.on("connection", (peer) => {
         userList = userList.filter((members) => members !== leftMemberName);
         updateMemberList();
       }
+    } else if (data.actionType === "addReaction") {
+      const { emoji, messageId, userId } = data;
+      if (emoji && messageId && userId) {
+        // Ensure data completeness
+        if (!peerReactions.has(messageId)) {
+          peerReactions.set(messageId, new Map());
+        }
+        const reactionsMap = peerReactions.get(messageId);
+
+        // If the reaction is new for this user and message, add it
+        if (!reactionsMap.has(userId) || reactionsMap.get(userId) !== emoji) {
+          reactionsMap.set(userId, emoji);
+          const messageDiv = document.querySelector(`[data-id='${messageId}']`);
+          if (messageDiv) {
+            updateReactionCount(messageDiv, emoji, 1); // Update reaction count
+          }
+        }
+      }
     } else if (data.actionType === "pin") {
       console.log("Pin message received:", data.pinMsg); // Debugging line
       document.querySelector(".pinned--message").classList.remove("hidden");
@@ -551,17 +573,15 @@ swarm.on("connection", (peer) => {
         }
       });
     } else if (data.actionType === "deleteMsg") {
-      // Select all message elements (both left and right)
-      const messageElements = document.querySelectorAll(
-        ".message-item-left, .message-item-right"
-      );
+      const messageId = data.messageId;
 
-      messageElements.forEach((messageElement) => {
-        const messageId = messageElement.getAttribute("data-id"); // Get the unique message ID
-        if (messageId === data.messageId) {
-          messageElement.textContent = "message deleted"; // Update only the matching message
-        }
-      });
+      // Find and delete the message with the matching data-id
+      const messageElement = document.querySelector(`[data-id='${messageId}']`);
+      if (messageElement) {
+        messageElement.textContent = "message deleted";
+      } else {
+        console.log(`Message with ID ${messageId} not found.`);
+      }
     } else if (data.isFile) {
       const fileType = data.fileType;
       onMessageAdded(
@@ -589,6 +609,7 @@ swarm.on("connection", (peer) => {
       let isSticker = data.isSticker;
       let isVideo = data.isVideo;
       let isAudio = data.isAudio;
+      let messageId = data.messageId;
 
       onMessageAdded(
         senderName,
@@ -597,7 +618,9 @@ swarm.on("connection", (peer) => {
         isAdmin,
         isSticker,
         isVideo,
-        isAudio
+        isAudio,
+        "",
+        messageId
       ); // Display the message with the correct sender name
     } // Display the message with the correct sender name
   });
@@ -722,12 +745,17 @@ function sendMessage(e) {
 
   const name =
     userName || b4a.toString(swarm.keyPair.publicKey, "hex").substr(0, 6); // Use the sender's name or 'You'
+  const messageId = `msg-${Date.now()}-${Math.random()
+    .toString(36)
+    .substr(2, 9)}`;
   // Prepare the message data as an object for regular messages
   const messageData = {
     name: name,
     message: message,
     isImage: false,
+    isSticker: false,
     isAdmin: isAdmin,
+    messageId: messageId,
   };
 
   // Convert the message data to a Buffer and send it to all peers
@@ -736,7 +764,17 @@ function sendMessage(e) {
   const peers = [...swarm.connections];
   for (const peer of peers) peer.write(messageBuffer);
 
-  onMessageAdded("You", message, false, isAdmin); // Display the message in the sender's system
+  onMessageAdded(
+    "You",
+    message,
+    false,
+    isAdmin,
+    false,
+    false,
+    false,
+    "",
+    messageId
+  ); // Display the message in the sender's system
 }
 
 const fixedColors = ["#FF5733", "#33FF57", "#D2FF72", "#FF33A6", "#F9E400"];
@@ -764,13 +802,20 @@ function onMessageAdded(
   isSticker = false,
   isVideo = false,
   isAudio = false,
-  fileType = ""
+  fileType,
+  messageId
 ) {
   const messagesContainer = document.querySelector("#messages");
 
   // Create the message wrapper
   const messageDiv = document.createElement("div");
   messageDiv.classList.add("message--div");
+
+  if (messageId) {
+    messageDiv.setAttribute("data-id", messageId); // Assign the unique data-id
+  } else {
+    console.error("Error: messageId is missing when adding the message.");
+  }
 
   // TimeElement
   const currentTime = new Date();
@@ -798,7 +843,7 @@ function onMessageAdded(
 
   menuBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    messagePopUp(e, messageDiv, senderName, isAdmin);
+    messagePopUp(e, messageDiv, senderName, isAdmin, messageId);
   });
   // Append the time element to the messageDiv
 
@@ -874,11 +919,11 @@ function onMessageAdded(
       messageElement.classList.add(
         senderName === "You" ? "message-item-right" : "message-item-left"
       );
+      if (messageId) {
+        messageElement.setAttribute("data-id", messageId); // Add the unique ID as a data attribute
+      }
 
-      const messageId = `msg-${Date.now()}-${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
-      messageElement.setAttribute("data-id", messageId); // Add the unique ID as a data attribute
+      console.log(messageId);
 
       if (message.startsWith("clip://")) {
         // Extract the clipboard text by removing the clip:// part
@@ -1083,10 +1128,32 @@ function onMessageAdded(
         messageElement.innerHTML += formattedMessage;
         messageDiv.appendChild(messageElement);
       } else {
+        const messageContentWrapper = document.createElement("div");
+
+        messageContentWrapper.classList.add(
+          senderName === "You"
+            ? "message-content-wrapper-right"
+            : "message-content-wrapper-left"
+        );
+
+        messageDiv.appendChild(messageContentWrapper);
+
         const formattedMessage = message.replace(/\n/g, "<br/>");
 
         messageElement.innerHTML = formattedMessage;
-        messageDiv.appendChild(messageElement);
+        messageContentWrapper.appendChild(messageElement);
+
+        const reactionButton = document.createElement("button");
+        reactionButton.textContent = "React";
+        reactionButton.classList.add("reaction-button");
+
+        // Open emoji picker when "React" button is clicked
+        reactionButton.addEventListener("click", (e) => {
+          e.preventDefault();
+          showEmojiPicker(messageDiv, messageId, reactionButton); // Pass reactionButton for positioning
+        });
+
+        messageContentWrapper.appendChild(reactionButton);
       }
 
       function handleVote(event) {
@@ -1256,7 +1323,7 @@ stickerContainer.addEventListener("click", (e) => {
 });
 //********************************************************************************//
 
-function messagePopUp(event, messageDiv, senderName, isAdmin) {
+function messagePopUp(event, messageDiv, senderName, isAdmin, messageId) {
   // Remove any existing popup
   const existingMenu = document.querySelector(".message-menu");
   if (existingMenu) {
@@ -1267,48 +1334,55 @@ function messagePopUp(event, messageDiv, senderName, isAdmin) {
   messageMenu.classList.add("message-menu");
 
   // Create options for the menu
+  // const emojiMessage = document.createElement("button");
   const pinMessage = document.createElement("button");
   const editMessage = document.createElement("button");
   const deleteMessage = document.createElement("button");
 
-  if (isAdmin) {
-    pinMessage.textContent = "Pin";
-    pinMessage.addEventListener("click", () => {
-      if (!isAdmin) {
-        alert("Only admins can pin messages.");
-        return; // Prevent non-admins from pinning
-      }
+  // emojiMessage.textContent = "React";
+  pinMessage.textContent = "Pin";
 
-      const messageText = messageDiv.querySelector(
-        ".message-item-left, .message-item-right"
-      );
-      if (messageText) {
-        const pinMsg = messageText.textContent;
-        console.log("Pin message text:", pinMsg);
+  // Emoji message logic
+  // emojiMessage.addEventListener("click", () => {
+  //   showEmojiPicker(messageDiv, messageId);
+  //   messageMenu.remove();
+  // });
+  // Pin message logic
+  pinMessage.addEventListener("click", () => {
+    if (!isAdmin) {
+      alert("Only admins can pin messages.");
+      return; // Prevent non-admins from pinning
+    }
 
-        document.querySelector(".pinned--message").classList.remove("hidden");
-        document.querySelector(".pinned--messageMsg").textContent = pinMsg;
+    const messageText = messageDiv.querySelector(
+      ".message-item-left, .message-item-right"
+    );
+    if (messageText) {
+      const pinMsg = messageText.textContent;
+      console.log("Pin message text:", pinMsg);
 
-        const pinMessageData = {
-          actionType: "pin",
-          name: senderName,
-          pinMsg: pinMsg,
-          isAdmin: true, // Include admin status in the message
-        };
+      document.querySelector(".pinned--message").classList.remove("hidden");
+      document.querySelector(".pinned--messageMsg").textContent = pinMsg;
 
-        const messageBuffer = Buffer.from(JSON.stringify(pinMessageData));
-        const peers = [...swarm.connections];
-        for (const peer of peers) peer.write(messageBuffer); // Send to all peers
-      }
-      messageMenu.remove();
-    });
+      const pinMessageData = {
+        actionType: "pin",
+        name: senderName,
+        pinMsg: pinMsg,
+        isAdmin: true, // Include admin status in the message
+      };
 
-    messageMenu.appendChild(pinMessage); // Only append if the user is an admin
-  }
+      const messageBuffer = Buffer.from(JSON.stringify(pinMessageData));
+      const peers = [...swarm.connections];
+      for (const peer of peers) peer.write(messageBuffer); // Send to all peers
+    }
+    messageMenu.remove();
+  });
+
+  messageMenu.appendChild(pinMessage); // Only append if the user is an admin
   editMessage.textContent = "Edit";
   deleteMessage.textContent = "Delete";
 
-  // Add event listeners for the options
+  // Edit message logic
   editMessage.addEventListener("click", () => {
     const messageText = messageDiv.querySelector(
       ".message-item-left, .message-item-right"
@@ -1351,39 +1425,50 @@ function messagePopUp(event, messageDiv, senderName, isAdmin) {
     }
     messageMenu.remove(); // Close the menu after editing
   });
-
+  // Delete message logic
   deleteMessage.addEventListener("click", () => {
     if (confirm("Are you sure you want to delete this message?")) {
-      const messageText = messageDiv.querySelector(
+      // Select the inner message element directly to get data-id
+      const innerMessageElement = messageDiv.querySelector(
         ".message-item-left, .message-item-right"
       );
 
-      if (messageText) {
-        const messageId = messageDiv.getAttribute("data-id");
-        const originalMessage = messageText.textContent;
+      if (!innerMessageElement) {
+        console.error("Error: Inner message element not found.");
+        return;
+      }
 
-        messageText.textContent = "message deleted"; // Remove the message from the UI
+      const messageId = innerMessageElement.getAttribute("data-id"); // Get the data-id from the inner div
 
-        // Remove the menu button
-        const menuBtn = messageDiv.querySelector(
-          ".message--menu--left, .message--menu--right"
-        );
-        if (menuBtn) {
-          menuBtn.remove(); // Remove the menu button from the message
-        }
+      if (!messageId) {
+        console.error("Error: messageId is null or undefined.");
+        return;
+      }
 
-        const deleteMessageData = {
-          actionType: "deleteMsg",
-          name: senderName,
-          messageId: messageId,
-        };
+      console.log("Deleting message with messageId:", messageId);
 
-        const messageBuffer = Buffer.from(JSON.stringify(deleteMessageData));
-        const peers = [...swarm.connections];
-        for (let peer of peers) peer.write(messageBuffer);
+      const deleteMessageData = {
+        actionType: "deleteMsg",
+        messageId: messageId, // Send the messageId to all peers for deletion
+      };
+
+      const messageBuffer = Buffer.from(JSON.stringify(deleteMessageData));
+
+      const peers = [...swarm.connections];
+      for (let peer of peers) {
+        peer.write(messageBuffer);
+      }
+
+      innerMessageElement.textContent = "message deleted";
+
+      const menuBtn = messageDiv.querySelector(
+        ".message--menu--left, .message--menu--right"
+      );
+      if (menuBtn) {
+        menuBtn.remove();
       }
     }
-    messageMenu.remove(); // Close the menu after deleting
+    messageMenu.remove(); // Close the message menu after deleting
   });
 
   document.addEventListener("click", (e) => {
@@ -1393,6 +1478,7 @@ function messagePopUp(event, messageDiv, senderName, isAdmin) {
   });
 
   // Append options to the menu
+  // messageMenu.appendChild(emojiMessage);
   messageMenu.appendChild(pinMessage);
   messageMenu.appendChild(editMessage);
   messageMenu.appendChild(deleteMessage);
@@ -1422,3 +1508,125 @@ unPin.addEventListener("click", (e) => {
   document.querySelector(".pinned--message").classList.add("hidden");
   document.querySelector(".pinned--messageMsg").textContent = "";
 });
+
+function showEmojiPicker(messageDiv, messageId, reactionButton) {
+  // Remove any existing emoji picker
+  const existingPicker = document.querySelector(".emoji-picker");
+  if (existingPicker) existingPicker.remove();
+
+  // Create a new emoji picker
+  const emojiPicker = document.createElement("div");
+  emojiPicker.classList.add("emoji-picker");
+
+  // Define some emojis to choose from
+  const emojis = ["👍", "❤️", "😂", "😮", "😢", "👏"];
+  emojis.forEach((emoji) => {
+    const emojiButton = document.createElement("button");
+    emojiButton.textContent = emoji;
+    emojiButton.classList.add("emoji-button");
+
+    // Add emoji reaction on click
+    emojiButton.addEventListener("click", () => {
+      addReactionToMessage(messageDiv, emoji, messageId); // Add the reaction
+      emojiPicker.remove(); // Close picker
+    });
+
+    emojiPicker.appendChild(emojiButton);
+  });
+
+  document.body.appendChild(emojiPicker);
+  if (messageDiv.querySelector(".message-item-right")) {
+    emojiPicker.classList.add("emoji-picker-right");
+  } else {
+    emojiPicker.classList.add("emoji-picker-left");
+  }
+
+  messageDiv.appendChild(emojiPicker);
+}
+
+// Function to add or update a reaction and broadcast to peers
+function addAndBroadcastReaction(messageDiv, emoji, messageId) {
+  const userId = userName || "anonymous"; // Local user's identifier
+  if (!peerReactions.has(messageId)) {
+    peerReactions.set(messageId, new Map()); // Initialize reactions for this message
+  }
+
+  const reactionsMap = peerReactions.get(messageId);
+
+  // Remove previous reaction if exists
+  if (reactionsMap.has(userId)) {
+    const prevEmoji = reactionsMap.get(userId);
+    updateReactionCount(messageDiv, prevEmoji, -1); // Decrement count of previous reaction
+  }
+
+  // Set new reaction and increment count
+  reactionsMap.set(userId, emoji);
+  updateReactionCount(messageDiv, emoji, 1);
+
+  // Broadcast reaction to all peers
+  const reactionData = { actionType: "addReaction", emoji, messageId, userId };
+  try {
+    const messageBuffer = Buffer.from(JSON.stringify(reactionData));
+    swarm.connections.forEach((peer) => peer.write(messageBuffer));
+  } catch (error) {
+    console.error("Error broadcasting reaction:", error);
+  }
+}
+
+function addReactionToMessage(messageDiv, emoji, messageId) {
+  const userId = userName || "anonymous";
+  if (!userReactions.has(messageId)) {
+    userReactions.set(messageId, new Map()); // Initialize if needed
+  }
+
+  const reactionsMap = userReactions.get(messageId);
+
+  // Remove previous reaction if it exists
+  if (reactionsMap.has(userId)) {
+    const prevEmoji = reactionsMap.get(userId);
+    updateReactionCount(messageDiv, prevEmoji, -1); // Decrement
+  }
+
+  // Add new reaction
+  reactionsMap.set(userId, emoji);
+  updateReactionCount(messageDiv, emoji, 1); // Increment
+
+  // Broadcast reaction change to peers
+  const reactionData = { actionType: "addReaction", emoji, messageId, userId };
+  const messageBuffer = Buffer.from(JSON.stringify(reactionData));
+  swarm.connections.forEach((peer) => peer.write(messageBuffer));
+}
+
+function updateReactionCount(messageDiv, emoji, delta) {
+  let reactionContainer = messageDiv.querySelector(".reaction-container");
+  if (!reactionContainer) {
+    reactionContainer = document.createElement("div");
+    reactionContainer.classList.add("reaction-container");
+    messageDiv.appendChild(reactionContainer);
+  }
+
+  if (messageDiv.querySelector(".message-item-right")) {
+    reactionContainer.classList.add("reaction-container-right");
+  } else {
+    reactionContainer.classList.add("reaction-container-left");
+  }
+
+  let emojiElement = Array.from(reactionContainer.children).find((el) =>
+    el.textContent.startsWith(emoji)
+  );
+
+  if (emojiElement) {
+    let count =
+      parseInt(emojiElement.getAttribute("data-count") || "1") + delta;
+    count > 0
+      ? emojiElement.setAttribute("data-count", count)
+      : emojiElement.remove();
+    emojiElement.textContent = `${emoji} ${count}`;
+  } else if (delta > 0) {
+    emojiElement = document.createElement("span");
+    emojiElement.classList.add("emoji-reaction");
+    emojiElement.textContent = `${emoji} 1`;
+    emojiElement.setAttribute("data-count", 1);
+    reactionContainer.appendChild(emojiElement);
+  }
+}
