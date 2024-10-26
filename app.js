@@ -21,6 +21,12 @@ const processedMessageIds = new Set(); // Track processed message IDs
 const userReactions = new Map();
 const peerReactions = new Map();
 
+let creator;
+
+let replyToMessageId = null;
+let replyToMessageContent = null;
+let replyToSenderName = null;
+
 const shareLocationBtn = document.querySelector(".share--location--btn");
 
 shareLocationBtn.addEventListener("click", getLocation);
@@ -563,22 +569,33 @@ swarm.on("connection", (peer) => {
     } else if (data.actionType === "unPin") {
       document.querySelector(".pinned--message").classList.add("hidden");
       document.querySelector(".pinned--messageMsg").textContent = data.pinMsg;
-    } else if (data.actionType === "editMsg") {
-      const messageElements = document.querySelectorAll(
-        ".message-item-left, .message-item-right"
-      );
-      messageElements.forEach((messageElement) => {
-        if (messageElement.textContent === data.originalMessage) {
-          messageElement.textContent = data.message;
+    } // Handle message edit
+    else if (data.actionType === "editMsg") {
+      const messageId = data.messageId;
+      const messageElement = document.querySelector(`[data-id='${messageId}']`);
+
+      if (messageElement) {
+        const textSpan = messageElement.querySelector(".message-item-left"); // Locate the span with message text
+        if (textSpan) {
+          textSpan.textContent = data.message; // Update only the text content within the span
+        } else {
+          console.error(`Text span for message ID ${messageId} not found.`);
         }
-      });
+      } else {
+        console.error(`Message element with ID ${messageId} not found.`);
+      }
     } else if (data.actionType === "deleteMsg") {
       const messageId = data.messageId;
 
       // Find and delete the message with the matching data-id
       const messageElement = document.querySelector(`[data-id='${messageId}']`);
       if (messageElement) {
-        messageElement.textContent = "message deleted";
+        const textSpan = messageElement.querySelector(".message-item-left");
+        if (textSpan) {
+          textSpan.textContent = "message deleted";
+        } else {
+          console.error(`Text span for message ID ${messageId} not found.`);
+        }
       } else {
         console.log(`Message with ID ${messageId} not found.`);
       }
@@ -610,6 +627,7 @@ swarm.on("connection", (peer) => {
       let isVideo = data.isVideo;
       let isAudio = data.isAudio;
       let messageId = data.messageId;
+      let replyToId = data.replyToId;
 
       onMessageAdded(
         senderName,
@@ -620,7 +638,13 @@ swarm.on("connection", (peer) => {
         isVideo,
         isAudio,
         "",
-        messageId
+        messageId,
+        replyToId
+          ? {
+              content: data.replyToMessageContent,
+              sender: data.replyToSenderName,
+            }
+          : null // Pass reply information if it exists
       ); // Display the message with the correct sender name
     } // Display the message with the correct sender name
   });
@@ -681,6 +705,8 @@ async function createChatRoom(groupName) {
   grpName.forEach((grp) => {
     grp.textContent = groupName;
   });
+
+  creator = true;
 }
 
 async function joinChatRoom(e) {
@@ -752,6 +778,9 @@ function sendMessage(e) {
   const messageData = {
     name: name,
     message: message,
+    replyToId: replyToMessageId,
+    replyToMessageContent: replyToMessageContent,
+    replyToSenderName: replyToSenderName,
     isImage: false,
     isSticker: false,
     isAdmin: isAdmin,
@@ -773,8 +802,15 @@ function sendMessage(e) {
     false,
     false,
     "",
-    messageId
+    messageId,
+    replyToMessageId
+      ? { content: replyToMessageContent, sender: replyToSenderName }
+      : null
   ); // Display the message in the sender's system
+
+  replyToMessageId = null;
+  const replyPreview = document.getElementById("reply-preview");
+  replyPreview.classList.add("hidden");
 }
 
 const fixedColors = ["#FF5733", "#33FF57", "#D2FF72", "#FF33A6", "#F9E400"];
@@ -803,7 +839,8 @@ function onMessageAdded(
   isVideo = false,
   isAudio = false,
   fileType,
-  messageId
+  messageId,
+  replyToId = null
 ) {
   const messagesContainer = document.querySelector("#messages");
 
@@ -815,6 +852,25 @@ function onMessageAdded(
     messageDiv.setAttribute("data-id", messageId); // Assign the unique data-id
   } else {
     console.error("Error: messageId is missing when adding the message.");
+  }
+
+  const replyBtn = document.createElement("button");
+  replyBtn.textContent = "Reply";
+  replyBtn.classList.add(
+    senderName === "You" ? "reply-button-right" : "reply-button-left"
+  );
+  replyBtn.addEventListener("click", () => {
+    setReplyToMessage(messageId, message, senderName); // Set the reply details
+  });
+  messageDiv.appendChild(replyBtn);
+
+  if (replyToId) {
+    const repliedMessageDiv = document.createElement("div");
+    repliedMessageDiv.classList.add(
+      senderName === "You" ? "replied-message-right" : "replied-message-left"
+    );
+    repliedMessageDiv.textContent = `Replying to ${replyToId.sender}: ${replyToId.content}`;
+    messageDiv.appendChild(repliedMessageDiv);
   }
 
   // TimeElement
@@ -839,6 +895,12 @@ function onMessageAdded(
   menuBtn.classList.add(
     senderName === "You" ? "message--menu--right" : "message--menu--left"
   );
+
+  if (senderName === "You" || creator) {
+    menuBtn.style.display = "block";
+  } else {
+    menuBtn.style.display = "none";
+  }
   messageDiv.appendChild(menuBtn);
 
   menuBtn.addEventListener("click", (e) => {
@@ -1144,7 +1206,7 @@ function onMessageAdded(
         messageContentWrapper.appendChild(messageElement);
 
         const reactionButton = document.createElement("button");
-        reactionButton.textContent = "React";
+        reactionButton.textContent = "😁";
         reactionButton.classList.add("reaction-button");
 
         // Open emoji picker when "React" button is clicked
@@ -1326,12 +1388,15 @@ stickerContainer.addEventListener("click", (e) => {
 function messagePopUp(event, messageDiv, senderName, isAdmin, messageId) {
   // Remove any existing popup
   const existingMenu = document.querySelector(".message-menu");
+
   if (existingMenu) {
     existingMenu.remove();
   }
 
   const messageMenu = document.createElement("div");
-  messageMenu.classList.add("message-menu");
+  messageMenu.classList.add(
+    senderName === "You" ? "message-menu-right" : "message-menu-left"
+  );
 
   // Create options for the menu
   // const emojiMessage = document.createElement("button");
@@ -1343,13 +1408,8 @@ function messagePopUp(event, messageDiv, senderName, isAdmin, messageId) {
   pinMessage.textContent = "Pin";
 
   // Emoji message logic
-  // emojiMessage.addEventListener("click", () => {
-  //   showEmojiPicker(messageDiv, messageId);
-  //   messageMenu.remove();
-  // });
-  // Pin message logic
   pinMessage.addEventListener("click", () => {
-    if (!isAdmin) {
+    if (!creator) {
       alert("Only admins can pin messages.");
       return; // Prevent non-admins from pinning
     }
@@ -1383,48 +1443,47 @@ function messagePopUp(event, messageDiv, senderName, isAdmin, messageId) {
   deleteMessage.textContent = "Delete";
 
   // Edit message logic
-  editMessage.addEventListener("click", () => {
-    const messageText = messageDiv.querySelector(
-      ".message-item-left, .message-item-right"
-    );
-    if (messageText) {
-      const originalMessage = messageText.textContent;
-      // Show the edit dialog
-      const editDialog = document.getElementById("edit-dialog");
-      const editInput = document.getElementById("edit-input");
-      editInput.value = originalMessage; // Set the current message to the input field
-      editDialog.classList.remove("hidden"); // Show the dialog
+  if (senderName === "You") {
+    editMessage.addEventListener("click", () => {
+      const messageText = messageDiv.querySelector(
+        ".message-item-left, .message-item-right"
+      );
 
-      // Save button functionality
-      document.getElementById("save-edit").onclick = () => {
-        const newMessage = editInput.value;
-        if (newMessage.trim() !== "") {
-          messageText.textContent = newMessage; // Update the message in the UI
-          // Optionally, send the updated message to peers
-          const updateMessageData = {
-            actionType: "editMsg",
-            name: senderName,
-            message: newMessage,
-            originalMessage: originalMessage,
-          };
-          // sendMessage(newMessage); // Uncomment if needed
+      const messageId = messageText.getAttribute("data-id");
+      if (messageText) {
+        const originalMessage = messageText.textContent;
+        const editDialog = document.getElementById("edit-dialog");
+        const editInput = document.getElementById("edit-input");
+        editInput.value = originalMessage;
+        editDialog.classList.remove("hidden");
 
-          const messageBuffer = Buffer.from(JSON.stringify(updateMessageData));
-          const peers = [...swarm.connections];
-          for (const peer of peers) {
-            peer.write(messageBuffer);
+        document.getElementById("save-edit").onclick = () => {
+          const newMessage = editInput.value;
+          if (newMessage.trim() !== "") {
+            messageText.textContent = newMessage;
+
+            const updateMessageData = {
+              actionType: "editMsg",
+              messageId: messageId,
+              message: newMessage,
+            };
+
+            const messageBuffer = Buffer.from(
+              JSON.stringify(updateMessageData)
+            );
+            swarm.connections.forEach((peer) => peer.write(messageBuffer));
           }
-        }
-        editDialog.classList.add("hidden"); // Hide the dialog after saving
-      };
+          editDialog.classList.add("hidden");
+        };
 
-      // Cancel button functionality
-      document.getElementById("cancel-edit").onclick = () => {
-        editDialog.classList.add("hidden"); // Hide the dialog on cancel
-      };
-    }
-    messageMenu.remove(); // Close the menu after editing
-  });
+        document.getElementById("cancel-edit").onclick = () => {
+          editDialog.classList.add("hidden");
+        };
+      }
+      messageMenu.remove();
+    });
+  }
+
   // Delete message logic
   deleteMessage.addEventListener("click", () => {
     if (confirm("Are you sure you want to delete this message?")) {
@@ -1534,6 +1593,14 @@ function showEmojiPicker(messageDiv, messageId, reactionButton) {
     emojiPicker.appendChild(emojiButton);
   });
 
+  document.addEventListener("click", (e) => {
+    3;
+    e.preventDefault();
+    if (!emojiPicker.contains(e.target) && e.target !== reactionButton) {
+      emojiPicker.remove();
+    }
+  });
+
   document.body.appendChild(emojiPicker);
   if (messageDiv.querySelector(".message-item-right")) {
     emojiPicker.classList.add("emoji-picker-right");
@@ -1634,4 +1701,23 @@ function updateReactionCount(messageDiv, emoji, delta) {
     emojiElement.setAttribute("data-count", 1);
     reactionContainer.appendChild(emojiElement);
   }
+}
+
+function setReplyToMessage(messageId, content, senderName) {
+  replyToMessageId = messageId;
+  replyToMessageContent = content;
+  replyToSenderName = senderName;
+
+  const replyPreview = document.getElementById("reply-preview");
+  replyPreview.classList.remove("hidden");
+  replyPreview.textContent = `Replying to ${senderName}: ${content}`;
+
+  // Add cancel button to remove the reply preview
+  const cancelReplyButton = document.createElement("button");
+  cancelReplyButton.textContent = "Cancel";
+  cancelReplyButton.addEventListener("click", () => {
+    replyToMessageId = null;
+    replyPreview.classList.add("hidden");
+  });
+  replyPreview.appendChild(cancelReplyButton);
 }

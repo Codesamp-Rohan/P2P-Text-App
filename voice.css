@@ -24,7 +24,7 @@
   top: 10px;
   right: 10px;
 }
-.message-menu {
+.message-menu-right {
   background-color: #3c3d37;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   color: #ecdfcc;
@@ -38,8 +38,23 @@
   border: 0;
   overflow: hidden;
 }
+.message-menu-left {
+  background-color: #3c3d37;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  color: #ecdfcc;
+  z-index: 1000;
+  position: absolute;
+  top: 129%;
+  left: 6%;
+  transform: translate(-50%, -50%);
+  width: 12%;
+  border-radius: 0 10px 10px 10px;
+  border: 0;
+  overflow: hidden;
+}
 
-.message-menu button {
+.message-menu-right button,
+.message-menu-left button {
   display: block;
   padding: 8px 12px;
   border: none;
@@ -51,7 +66,8 @@
   filter: grayscale(1);
 }
 
-.message-menu button:hover {
+.message-menu-right button:hover,
+.message-menu-left button:hover {
   background-color: #444;
 }
 
@@ -67,6 +83,65 @@
   z-index: 1001;
 }
 
+.hidden {
+  display: none;
+}
+.reply-button-right {
+  background-color: transparent;
+  width: fit-content;
+  color: #666;
+  border: 0;
+  align-self: flex-end;
+  cursor: pointer;
+}
+.reply-button-left {
+  background-color: transparent;
+  width: fit-content;
+  color: #666;
+  border: 0;
+  align-self: flex-start;
+  cursor: pointer;
+}
+.reply-preview {
+  background-color: #3c3d3776;
+  color: #ddd;
+  padding: 10px 20px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  border-radius: 10px;
+  position: absolute;
+  bottom: 10%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 0.5px solid #666;
+}
+.reply-preview button {
+  border: 0.5px solid #666;
+  background-color: #333;
+  color: #aaa;
+  padding: 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.replied-message-right {
+  color: #777;
+  align-self: flex-end;
+  font-size: 10px;
+  background: #333;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-block: 4px;
+}
+.replied-message-left {
+  color: #777;
+  align-self: flex-start;
+  font-size: 10px;
+  background: #333;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-block: 4px;
+}
 .hidden {
   display: none;
 }

@@ -143,6 +143,7 @@ input:focus {
   margin-block: 40px;
   overflow-y: scroll;
   position: relative;
+  padding-left: 20px;
 }
 .message-time-right {
   font-size: 8px; /* Adjust the font size */
@@ -903,9 +904,20 @@ canvas {
 .message--menu--img {
   width: 20px;
   height: 20px;
+  filter: grayscale(1);
+  opacity: 0.7;
 }
 .message--menu--left {
-  display: none;
+  width: fit-content;
+  background-color: transparent;
+  border: 0;
+  border-radius: 10px;
+  align-self: flex-end;
+  position: absolute;
+  z-index: 100;
+  top: 18%;
+  left: -2%;
+  cursor: pointer;
 }
 .message--menu--right {
   width: fit-content;
@@ -920,9 +932,10 @@ canvas {
   cursor: pointer;
 }
 .pinned--message {
+  border-radius: 30px 0 0 30px;
   color: #ecdfcc;
   background-color: #3c3d3778;
-  padding: 10px;
+  padding: 5px 15px;
   font-size: 14px;
   font-weight: 100;
   position: sticky;
@@ -933,6 +946,7 @@ canvas {
   align-items: center;
   justify-content: space-between;
   z-index: 200;
+  border: 1px solid #444;
 }
 .unPin {
   font-size: 10px;
@@ -944,13 +958,15 @@ canvas {
   cursor: pointer;
 }
 .reaction-button {
-  background: transparent;
+  background: #3c3d37;
   border: 0;
   width: fit-content;
   color: #eee;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
   padding-bottom: 4px;
+  padding: 4px;
+  border-radius: 20px;
 }
 .reaction-container-right {
   gap: 5px;
@@ -998,7 +1014,7 @@ canvas {
 .message-content-wrapper-left {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-start;
   gap: 5px;
   width: 100%;
@@ -1006,7 +1022,7 @@ canvas {
 .message-content-wrapper-right {
   display: flex;
   flex-direction: row-reverse;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-start;
   gap: 5px;
   width: 100%;
