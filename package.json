@@ -1,8 +1,10 @@
 {
-  "name": "001pearstuffs",
-  "main": "index.html",
+  "name": "swarmchat",
+  "version": "1.0.0",
+  "description": "A P2P chat app used for live message, files sharing with many features.",
+  "main": "./index.html",
   "pear": {
-    "name": "001pearstuffs",
+    "name": "swarmchat",
     "type": "desktop",
     "gui": {
       "backgroundColor": "#1F2430",
@@ -21,6 +23,9 @@
       "https://cdn.jsdelivr.net",
       "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/dark.min.css"
     ]
+  },
+  "bin": {
+    "swarmchat": "./main.js"
   },
   "type": "module",
   "license": "Apache-2.0",
