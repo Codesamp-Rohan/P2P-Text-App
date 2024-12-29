@@ -1,6 +1,6 @@
 {
   "name": "swarmchat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A P2P chat app used for live message, files sharing with many features.",
   "main": "./index.html",
   "pear": {
