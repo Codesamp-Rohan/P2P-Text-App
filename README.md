@@ -1,56 +1,32 @@
-# P2P-Text-App
+# swarmchat
 
-A peer-to-peer (P2P) chat application built using Holepunch and Hyperswarm. This app allows users to chat in real-time without needing a centralized server. No data is saved, so it is only helpful for live chatting, nothing will be saved for future.
+A peer-to-peer (P2P) chat application built using and Hyperswarm. This app allows users to chat in real-time without needing a centralized server. No data is saved, so it is only helpful for live chatting, nothing will be saved for future.
 
 ## Tech Stack
 
 Frontend: HTML, CSS, JavaScript.
-
 Networking: Holepunch, Hyperswarm.
+Backend: Node JS
 
-Backend: None, this is a fully decentralized app.
+--- 
 
 ## Installation
-
-make sure node and npm is installed. To check,
-
-```shell
-node -v
-npm -v
+Install swarmchat globally:
+```bash
+npm i swarmchat -g
 ```
-
-If they are present then install Pear by holepunch.
-
-```shell
-npm i -g pear
-
-pear
+To run:
+```bash
+swarmchat
 ```
-
-To check Pear is fully working
-
-```shell
-pear run pear://keet
-```
-
-Now, after checking and installing all the above stuffs, clone the git.
-
-```shell
-git clone https://github.com/Codesamp-Rohan/P2P-Text-App.git
-
-cd P2P-Text-App
-
-pear init --yes
-pear run --dev . / pear dev
-```
-
-## Contributing
-
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
+ ---
+# Contribution
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
-
-## License
-
-[codesamp-Rohan](https://github.com/codesamp-rohan)
+ ---
+## Contact
+Have question or suggestions? Reach out!
+ - Email: rohanchaudhary.bkbiet2022@gmail.com
+ - LinkedIn: [LinkedIn](https://www.linkedin.com/in/rohan-chaudhary-399742255)
+ - GitHub Issues: [Open an issue](https://github.com/Codesamp-Rohan/issues)
